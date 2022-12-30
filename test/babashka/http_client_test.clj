@@ -91,11 +91,11 @@
                           {:body "hello"}))
        "hello")))
 
-;; (deftest basic-auth-test
-;;   (is (re-find #"authenticated.*true"
-;;                (:body
-;;                 (client/get "https://postman-echo.com/basic-auth"
-;;                           {:basic-auth ["postman" "password"]})))))
+(deftest basic-auth-test
+  (is (re-find #"authenticated.*true"
+               (:body
+                (client/get "https://postman-echo.com/basic-auth"
+                          {:basic-auth ["postman" "password"]})))))
 
 ;; (deftest get-response-object-test
 ;;   (let [response (client/get "https://httpstat.us/200")]

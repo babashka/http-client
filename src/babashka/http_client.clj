@@ -14,6 +14,7 @@
             HttpResponse$BodyHandlers]
            [java.util.concurrent CompletableFuture]
            [java.util.function Function Supplier]
+           [java.util Base64]
            [java.time Duration]))
 
 (def ^HttpClient default-client
@@ -96,6 +97,20 @@
         (recur (conj! params* param) (next kvs)))
       (str/join "&" (persistent! params*)))))
 
+(defn basic-auth-value [x]
+  (let [[user pass] (if (sequential? x) x [(clojure.core/get x :user) (clojure.core/get x :pass)])
+        basic-auth (str user ":" pass)]
+    (str "Basic " (.encodeToString (Base64/getEncoder) (.getBytes basic-auth "UTF-8")))))
+
+(defn with-basic-auth [opts]
+  (if-let [basic-auth (:basic-auth opts)]
+    (let [headers (:headers opts)
+          auth (basic-auth-value basic-auth)
+          headers (assoc headers :authorization auth)
+          opts (assoc opts :headers headers)]
+      opts)
+    opts))
+
 (defn ->request-builder ^HttpRequest$Builder [opts]
   (let [{:keys [expect-continue
                 headers
@@ -126,7 +141,7 @@
       version                  (.version (version-keyword->version-enum version)))))
 
 (defn ->request
-  (^HttpRequest [req-map] (.build (->request-builder req-map))))
+  (^HttpRequest [req-map] (.build (->request-builder (with-basic-auth  req-map)))))
 
 (def ^:private bh-of-string (HttpResponse$BodyHandlers/ofString))
 (def ^:private bh-of-input-stream (HttpResponse$BodyHandlers/ofInputStream))
