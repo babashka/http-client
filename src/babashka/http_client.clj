@@ -148,6 +148,16 @@
       opts)
     opts))
 
+(defn with-accept-header [opts]
+  (if-let [accept (:accept opts)]
+    (let [headers (:headers opts)
+          accept-header (case accept
+                          :json "application/json")
+          headers (assoc headers :accept accept-header)
+          opts (assoc opts :headers headers)]
+      opts)
+    opts))
+
 (defn ->request-builder ^HttpRequest$Builder [opts]
   (let [{:keys [expect-continue
                 headers
@@ -177,8 +187,12 @@
       uri                      (.uri (URI/create uri))
       version                  (.version (version-keyword->version-enum version)))))
 
+(def default-request-interceptors
+  [with-accept-header
+   with-basic-auth])
+
 (defn ->request
-  (^HttpRequest [req-map] (.build (->request-builder (with-basic-auth  req-map)))))
+  (^HttpRequest [req-map] (.build (->request-builder ((apply comp default-request-interceptors) req-map)))))
 
 (def ^:private bh-of-string (HttpResponse$BodyHandlers/ofString))
 (def ^:private bh-of-input-stream (HttpResponse$BodyHandlers/ofInputStream))

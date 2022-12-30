@@ -126,13 +126,13 @@
         (is (= "https://www.httpbin.org" (get-in response [:headers "location"])))
         (is (empty? (:redirects response))))))
 
-;; (deftest accept-header-test
-;;   (is (= 200
-;;          (-> (client/get "https://httpstat.us/200"
-;;                        {:accept :json})
-;;              :body
-;;              (json/parse-string true)
-;;              :code))))
+(deftest accept-header-test
+  (is (= 200
+         (-> (client/get "https://httpstat.us/200"
+                       {:accept :json})
+             :body
+             (json/parse-string true)
+             :code))))
 
 ;; (deftest url-encode-query-params-test
 ;;   (is (= {"my query param?" "hello there"}
