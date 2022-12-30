@@ -15,7 +15,7 @@
                      "200"))
   (is (= 200
          (-> (client/get "https://httpstat.us/200"
-                       {:headers {"Accept" "application/json"}})
+                         {:headers {"Accept" "application/json"}})
              :body
              (json/parse-string true)
              :code)))
@@ -37,17 +37,17 @@
             0 10))
   (is (str/includes?
        (:body (client/post "https://postman-echo.com/post"
-                         {:body "From Clojure"}))
+                           {:body "From Clojure"}))
        "From Clojure"))
   (testing "file body"
     (is (str/includes?
          (:body (client/post "https://postman-echo.com/post"
-                           {:body (io/file "README.md")}))
+                             {:body (io/file "README.md")}))
          "babashka")))
   (testing "JSON body"
     (let [response (client/post "https://postman-echo.com/post"
-                              {:headers {"Content-Type" "application/json"}
-                               :body (json/generate-string {:a "foo"})})
+                                {:headers {"Content-Type" "application/json"}
+                                 :body (json/generate-string {:a "foo"})})
           body (:body response)
           body (json/parse-string body true)
           json (:json body)]
@@ -55,78 +55,76 @@
   (testing "stream body"
     (is (str/includes?
          (:body (client/post "https://postman-echo.com/post"
-                           {:body (io/input-stream "README.md")}))
+                             {:body (io/input-stream "README.md")}))
          "babashka")))
   (testing "form-params"
     (let [body (:body (client/post "https://postman-echo.com/post"
-                                 {:form-params {"name" "Michiel Borkent"
-                                                :location "NL"
-                                                :this-isnt-a-string 42}}))
+                                   {:form-params {"name" "Michiel Borkent"
+                                                  :location "NL"
+                                                  :this-isnt-a-string 42}}))
           body (json/parse-string body true)
           headers (:headers body)
           content-type (:content-type headers)]
       (is (= "application/x-www-form-urlencoded" content-type))))
   ;; TODO:
   #_(testing "multipart"
-    (testing "posting file"
-      (let [tmp-file (java.io.File/createTempFile "foo" "bar")
-            _ (spit tmp-file "Michiel Borkent")
-            _ (.deleteOnExit tmp-file)
-            body (:body (client/post "https://postman-echo.com/post"
-                                   {:multipart [{:name "file"
-                                                 :content (io/file tmp-file)}
-                                                {:name "filename" :content (.getPath tmp-file)}
-                                                ["file2" (io/file tmp-file)]]}))
-            body (json/parse-string body true)
-            headers (:headers body)
-            content-type (:content-type headers)]
-        (is (str/starts-with? content-type "multipart/form-data"))
-        (is (:files body))
-        (is (str/includes? (-> body :form :filename) "foo"))
-        (prn body)))))
+      (testing "posting file"
+        (let [tmp-file (java.io.File/createTempFile "foo" "bar")
+              _ (spit tmp-file "Michiel Borkent")
+              _ (.deleteOnExit tmp-file)
+              body (:body (client/post "https://postman-echo.com/post"
+                                       {:multipart [{:name "file"
+                                                     :content (io/file tmp-file)}
+                                                    {:name "filename" :content (.getPath tmp-file)}
+                                                    ["file2" (io/file tmp-file)]]}))
+              body (json/parse-string body true)
+              headers (:headers body)
+              content-type (:content-type headers)]
+          (is (str/starts-with? content-type "multipart/form-data"))
+          (is (:files body))
+          (is (str/includes? (-> body :form :filename) "foo"))
+          (prn body)))))
 
 (deftest patch-test
   (is (str/includes?
        (:body (client/patch "https://postman-echo.com/patch"
-                          {:body "hello"}))
+                            {:body "hello"}))
        "hello")))
 
 (deftest basic-auth-test
   (is (re-find #"authenticated.*true"
                (:body
                 (client/get "https://postman-echo.com/basic-auth"
-                          {:basic-auth ["postman" "password"]})))))
+                            {:basic-auth ["postman" "password"]})))))
 
-;; (deftest get-response-object-test
-;;   (let [response (client/get "https://httpstat.us/200")]
-;;     (is (map? response))
-;;     (is (= 200 (:status response)))
-;;     (is (= "200 OK" (:body response)))
-;;     (is (string? (get-in response [:headers "server"]))))
+(deftest get-response-object-test
+  (let [response (client/get "https://httpstat.us/200")]
+    (is (map? response))
+    (is (= 200 (:status response)))
+    (is (= "200 OK" (:body response)))
+    (is (string? (get-in response [:headers "server"]))))
 
-;;   (testing "response object as stream"
-;;     (let [response (client/get "https://httpstat.us/200" {:as :stream})]
-;;       (is (map? response))
-;;       (is (= 200 (:status response)))
-;;       (is (instance? java.io.InputStream (:body response)))
-;;       (is (= "200 OK" (slurp (:body response))))))
+  (testing "response object as stream"
+    (let [response (client/get "https://httpstat.us/200" {:as :stream})]
+      (is (map? response))
+      (is (= 200 (:status response)))
+      (is (instance? java.io.InputStream (:body response)))
+      (is (= "200 OK" (slurp (:body response))))))
 
-;;   (comment
-;;     ;; disabled because of https://github.com/postmanlabs/httpbin/issues/617
-;;     (testing "response object with following redirect"
-;;       (let [response (client/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org")]
-;;         (is (map? response))
-;;         (is (= 200 (:status response)))))
+  (testing "response object with following redirect"
+    (let [response (client/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org")]
+      (is (map? response))
+      (is (= 200 (:status response)))))
 
-;;     (testing "response object without fully following redirects"
-;;       (let [response (client/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org"
-;;                                {:raw-args ["--max-redirs" "0"]
-;;                                 :throw false})]
-;;         (is (map? response))
-;;         (is (= 302 (:status response)))
-;;         (is (= "" (:body response)))
-;;         (is (= "https://www.httpbin.org" (get-in response [:headers "location"])))
-;;         (is (empty? (:redirects response)))))))
+  (testing "response object without fully following redirects"
+      ;; (System/getProperty "jdk.httpclient.redirects.retrylimit" "0")
+    (let [response (client/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org"
+                               {:client (client/client {:follow-redirects :never})})]
+        (is (map? response))
+        (is (= 302 (:status response)))
+        (is (= "" (:body response)))
+        (is (= "https://www.httpbin.org" (get-in response [:headers "location"])))
+        (is (empty? (:redirects response))))))
 
 ;; (deftest accept-header-test
 ;;   (is (= 200

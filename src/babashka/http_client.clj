@@ -17,8 +17,50 @@
            [java.util Base64]
            [java.time Duration]))
 
+(defn- ->follow-redirect [redirect]
+  (case redirect
+    :always HttpClient$Redirect/ALWAYS
+    :never HttpClient$Redirect/NEVER
+    :normal HttpClient$Redirect/NORMAL))
+
+(defn- version-keyword->version-enum [version]
+  (case version
+    :http1.1 HttpClient$Version/HTTP_1_1
+    :http2   HttpClient$Version/HTTP_2))
+
+(defn client-builder
+  (^HttpClient$Builder []
+   (client-builder {}))
+  (^HttpClient$Builder [opts]
+   (let [{:keys [connect-timeout
+                 cookie-handler
+                 executor
+                 follow-redirects
+                 priority
+                 proxy
+                 ssl-context
+                 ssl-parameters
+                 version]} opts]
+     (cond-> (HttpClient/newBuilder)
+       ;; connect-timeout  (.connectTimeout (util/convert-timeout connect-timeout))
+       cookie-handler   (.cookieHandler cookie-handler)
+       executor         (.executor executor)
+       follow-redirects (.followRedirects (->follow-redirect follow-redirects))
+       priority         (.priority priority)
+       proxy            (.proxy proxy)
+       ssl-context      (.sslContext ssl-context)
+       ssl-parameters   (.sslParameters ssl-parameters)
+       version          (.version (version-keyword->version-enum version))))))
+
+(defn client
+  (^HttpClient [] (.build (client-builder)))
+  (^HttpClient [opts]
+   (if (map? opts)
+     (.build (client-builder opts))
+     (.build ^HttpClient$Builder opts))))
+
 (def ^HttpClient default-client
-  (delay (HttpClient/newHttpClient)))
+  (delay (client {:follow-redirects :always})))
 
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
@@ -63,11 +105,6 @@
     :else
     (throw (ex-info (str "Don't know how to convert " (type body) "to body")
                     {:body body}))))
-
-(defn- version-keyword->version-enum [version]
-  (case version
-    :http1.1 HttpClient$Version/HTTP_1_1
-    :http2   HttpClient$Version/HTTP_2))
 
 (defn- convert-timeout [t]
   (if (integer? t)
@@ -203,6 +240,7 @@
 (defn patch
   ([url] (patch url nil))
   ([url opts]
-   (let [opts (assoc opts :uri url
+   (let [opts (assoc opts
+                     :uri url
                      :method :patch)]
      (request opts))))
