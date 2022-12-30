@@ -141,7 +141,7 @@ Using the verbose `:uri` API for fine grained (and safer) URI construction:
  :headers
  {:Accept "*/*",
   :Host "httpbin.org",
-  :User-Agent "curl/7.64.1",
+  :User-Agent "Java-http-client/11.0.17"
   :X-Amzn-Trace-Id
   "Root=1-5e63989e-7bd5b1dba75e951a84d61b6a"},
  :origin "46.114.35.45",
@@ -164,11 +164,9 @@ The default client is configured to always follow redirects. To opt out of this 
 An `ExceptionInfo` will be thrown for all HTTP response status codes other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`.
 
 ```clojure
-(client/get "https://httpstat.us/404")
-;;=> Execution error (ExceptionInfo) at babashka.client/request (curl.clj:228).
-     status 404
-(:status (ex-data *e))
-;;=> 404
+user=> (client/get "https://httpstat.us/404")
+Execution error (ExceptionInfo) at babashka.http-client.interceptors/fn (interceptors.clj:194).
+Exceptional status code: 404
  ```
 
 To opt out of an exception being thrown, set `:throw` to false.
