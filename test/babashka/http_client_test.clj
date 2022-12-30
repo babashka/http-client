@@ -134,12 +134,12 @@
              (json/parse-string true)
              :code))))
 
-;; (deftest url-encode-query-params-test
-;;   (is (= {"my query param?" "hello there"}
-;;          (-> (client/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"}})
-;;              :body
-;;              (json/parse-string)
-;;              (get "args")))))
+(deftest url-encode-query-params-test
+  (is (= {"my query param?" "hello there"}
+         (-> (client/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"}})
+             :body
+             (json/parse-string)
+             (get "args")))))
 
 ;; (deftest low-level-url-test
 ;;   (let [response (-> (client/request {:url {:scheme "https"
