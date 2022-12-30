@@ -1,2 +1,8 @@
 {:tasks
- {test:clj (apply clojure "-M:test" *command-line-args*)}}
+ {test:clj (apply clojure "-M:test" *command-line-args*)
+  quickdoc {:doc "Invoke quickdoc"
+            :extra-deps {io.github.borkdude/quickdoc {:git/sha "62dd3c6a828c3a5e61bae6ca80c8ba4781356a67"}}
+            :task (exec 'quickdoc.api/quickdoc)
+            :exec-args {:git/branch "main"
+                        :github/repo "https://github.com/babashka/http-client"
+                        :source-paths ["src/babashka/http_client.clj"]}}}}
