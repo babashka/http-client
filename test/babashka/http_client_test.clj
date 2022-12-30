@@ -234,13 +234,13 @@
                          {:headers {"Accept-Encoding" ["gzip" "deflate"]}})]
     (is (-> resp :body (json/parse-string true) :items))))
 
-;; (deftest header-with-keyword-key-test
-;;   (is (= 200
-;;          (-> (client/get "https://httpstat.us/200"
-;;                        {:headers {:accept "application/json"}})
-;;              :body
-;;              (json/parse-string true)
-;;              :code))))
+(deftest header-with-keyword-key-test
+  (is (= 200
+         (-> (client/get "https://httpstat.us/200"
+                       {:headers {:accept "application/json"}})
+             :body
+             (json/parse-string true)
+             :code))))
 
 ;; (deftest follow-redirects-test
 ;;   (testing "default behaviour of following redirects automatically"
