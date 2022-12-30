@@ -178,15 +178,6 @@ To opt out of an exception being thrown, set `:throw` to false.
 ;;=> 404
 ```
 
-If the body is being returned as a stream then exceptions are never thrown and the `:exit` value is wrapped in a `Delay`.
-
-```clojure
-(:exit (client/get "https://httpstat.us/404" {:as :stream}))
-;;=> #object[clojure.lang.Delay 0x75769ab0 {:status :pending, :val nil}]
-(force *1)
-;;=> 0
-```
-
 ### Compression
 
 To accept gzipped or zipped responses, use:
