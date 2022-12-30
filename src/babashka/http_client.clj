@@ -1,7 +1,7 @@
 (ns babashka.http-client
   (:refer-clojure :exclude [send get])
   (:require [clojure.string :as str])
-  (:import [java.net URI]
+  (:import [java.net URI URLEncoder]
            [java.net.http
             HttpClient
             HttpClient$Builder
@@ -57,14 +57,37 @@
     (Duration/ofMillis t)
     t))
 
-(defn request-builder ^HttpRequest$Builder [opts]
+(defn- url-encode
+  "Returns an UTF-8 URL encoded version of the given string."
+  [^String unencoded]
+  (URLEncoder/encode unencoded "UTF-8"))
+
+(defn- coerce-key
+  "Coreces a key to str"
+  [k]
+  (if (keyword? k)
+    (-> k str (subs 1))
+    (str k)))
+
+(defn map->query-params [query-params-map]
+  (loop [params* (transient [])
+         kvs (seq query-params-map)]
+    (if kvs
+      (let [[k v] (first kvs)]
+        (recur (conj! params* (str (url-encode (coerce-key k)) "=" (url-encode (str v)))) (next kvs)))
+      (str/join "&" (persistent! params*)))))
+
+(defn ->request-builder ^HttpRequest$Builder [opts]
   (let [{:keys [expect-continue
                 headers
                 method
                 timeout
                 uri
                 version
-                body]} opts]
+                body]} opts
+        uri (if-let [qp (:query-params opts)]
+              (str uri "?" (map->query-params qp))
+              uri)]
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
       (seq headers)            (.headers (into-array String (eduction convert-headers-xf headers)))
@@ -73,19 +96,19 @@
       uri                      (.uri (URI/create uri))
       version                  (.version (version-keyword->version-enum version)))))
 
-(defn build-request
-  (^HttpRequest [req-map] (.build (request-builder req-map))))
+(defn ->request
+  (^HttpRequest [req-map] (.build (->request-builder req-map))))
 
 (def ^:private bh-of-string (HttpResponse$BodyHandlers/ofString))
 (def ^:private bh-of-input-stream (HttpResponse$BodyHandlers/ofInputStream))
 (def ^:private bh-of-byte-array (HttpResponse$BodyHandlers/ofByteArray))
 
-(defn- convert-body-handler [mode]
+(defn- ->body-handler [mode]
   (case mode
     nil bh-of-string
     :string bh-of-string
-    :input-stream bh-of-input-stream
-    :byte-array bh-of-byte-array))
+    :stream bh-of-input-stream
+    :bytes bh-of-byte-array))
 
 (defn- version-enum->version-keyword [^HttpClient$Version version]
   (case (.name version)
@@ -97,18 +120,20 @@
    :body (.body resp)
    :version (-> resp .version version-enum->version-keyword)
    :headers (into {}
-                  (map (fn [[k v]] [k (vec v)]))
+                  (map (fn [[k v]] [k (if (= 1 (count v))
+                                        (first v)
+                                        (vec v))]))
                   (.map (.headers resp)))})
 
 (defn request
   [{:keys [client raw as] :as req}]
   (let [^HttpClient client (or client @default-client)
-        req' (build-request req)
-        resp (.send client req' (convert-body-handler as))]
+        req' (->request req)
+        resp (.send client req' (->body-handler as))]
     (if raw resp (response->map resp))))
 
 (defn get
-  ([url] (get url nil))
-  ([url opts]
-   (let [opts (assoc opts :uri url :method :get)]
+  ([uri] (get uri nil))
+  ([uri opts]
+   (let [opts (assoc opts :uri uri :method :get)]
      (request opts))))
