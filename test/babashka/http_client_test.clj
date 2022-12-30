@@ -270,7 +270,11 @@
         ;; Add json interceptor add beginning of chain
         ;; It will be the first to see the request and the last to see the response
         interceptors (cons json-interceptor interceptors/default-interceptors)
-        resp (client/get "https://httpstat.us/200"
-                         {:interceptors interceptors
-                          :as :json})]
-    (is (= 200 (-> resp :body :code)))))
+        ]
+    (testing "interceptors on request"
+      (let [resp (client/get "https://httpstat.us/200"
+                             {:interceptors interceptors
+                              :as :json})]
+        (is (= 200 (-> resp :body
+                       ;; response as JSON
+                       :code)))))))
