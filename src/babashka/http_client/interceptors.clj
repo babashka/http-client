@@ -163,9 +163,27 @@
                             :bytes (stream-bytes body))]
                  (assoc resp :body body)))})
 
+(def construct-uri
+  "Request"
+  {:name ::construct-uri
+   :request (fn [req]
+              (let [uri (:uri req)
+                    uri (cond (string? uri) uri
+                              (map? uri)
+                              (str (java.net.URI. ^String (:scheme uri)
+                                                  ^String (:user uri)
+                                                  ^String (:host uri)
+                                                  ^Integer (:port uri)
+                                                  ^String (:path uri)
+                                                  ^String (:query uri)
+                                                  ^String (:fragment uri)))
+                              :else uri)]
+                (assoc req :uri uri)))})
+
 (def default-interceptors
   "Default interceptor chain. Interceptors are called in order for request and in reverse order for response."
-  [accept-header
+  [construct-uri
+   accept-header
    basic-auth
    query-params
    form-params
@@ -173,9 +191,9 @@
    decompress-body])
 
 #_(defn insert-interceptors-before [chain before & interceptors]
-  (let [[pre _ post] (partition-by #(= before %) chain)]
-    (reduce into [] [pre (conj (vec interceptors) before) post])))
+    (let [[pre _ post] (partition-by #(= before %) chain)]
+      (reduce into [] [pre (conj (vec interceptors) before) post])))
 
 #_(defn insert-interceptors-after [chain after & interceptors]
-  (let [[pre _ post] (partition-by #(= after %) chain)]
-    (reduce into [] [pre (list* after interceptors) post])))
+    (let [[pre _ post] (partition-by #(= after %) chain)]
+      (reduce into [] [pre (list* after interceptors) post])))

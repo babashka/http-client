@@ -64,7 +64,8 @@
      (.build ^HttpClient$Builder opts))))
 
 (def ^HttpClient default-client
-  (delay (client {:follow-redirects :always})))
+  (delay (client {:follow-redirects :always
+                  })))
 
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
