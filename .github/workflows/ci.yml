@@ -48,5 +48,8 @@ jobs:
           # key: cljdeps-${{ hashFiles('build.boot') }}
           restore-keys: cljdeps-
 
-      - name: Run tests
+      - name: Run clj tests
         run: bb test:clj
+
+      - name: Run bb tests
+        run: bb test:bb

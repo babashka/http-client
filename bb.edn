@@ -1,5 +1,9 @@
 {:tasks
  {test:clj (apply clojure "-M:test" *command-line-args*)
+  test:bb {:extra-paths ["src" "test"]
+           :extra-deps {io.github.cognitect-labs/test-runner
+                        {:git/tag "v0.5.0" :git/sha "b3fd0d2"}}
+           :task cognitect.test-runner/-main}
   quickdoc {:doc "Invoke quickdoc"
             :extra-deps {io.github.borkdude/quickdoc {:git/sha "62dd3c6a828c3a5e61bae6ca80c8ba4781356a67"}}
             :task (exec 'quickdoc.api/quickdoc)
