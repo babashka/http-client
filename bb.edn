@@ -5,4 +5,5 @@
             :task (exec 'quickdoc.api/quickdoc)
             :exec-args {:git/branch "main"
                         :github/repo "https://github.com/babashka/http-client"
-                        :source-paths ["src/babashka/http_client.clj"]}}}}
+                        :source-paths ["src/babashka/http_client.clj"
+                                       "src/babashka/http_client/interceptors.clj"]}}}}
