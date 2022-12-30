@@ -1,24 +1,25 @@
 (ns babashka.http-client.internal
   (:refer-clojure :exclude [send get])
-  (:require [clojure.string :as str]
-            [clojure.java.io :as io])
-  (:import [java.net URI URLEncoder]
-           [java.net.http
-            HttpClient
-            HttpClient$Builder
-            HttpClient$Redirect
-            HttpClient$Version
-            HttpRequest
-            HttpRequest$BodyPublishers
-            HttpRequest$Builder
-            HttpResponse
-            HttpResponse$BodyHandlers]
-           [java.util.concurrent CompletableFuture]
-           [java.util.function Function Supplier]
-           [java.util Base64]
-           [java.time Duration]
-           [java.util.zip
-            GZIPInputStream InflaterInputStream ZipException Inflater]))
+  (:require
+   [babashka.http-client.interceptors :as interceptors]
+   [clojure.string :as str])
+  (:import
+   [java.net URI URLEncoder]
+   [java.net.http
+    HttpClient
+    HttpClient$Builder
+    HttpClient$Redirect
+    HttpClient$Version
+    HttpRequest
+    HttpRequest$BodyPublishers
+    HttpRequest$Builder
+    HttpResponse
+    HttpResponse$BodyHandlers]
+   [java.time Duration]
+   [java.util.concurrent CompletableFuture]
+   [java.util.function Function Supplier]))
+
+(set! *warn-on-reflection* true)
 
 (defn- ->follow-redirect [redirect]
   (case redirect
@@ -119,14 +120,6 @@
   [^String unencoded]
   (URLEncoder/encode unencoded "UTF-8"))
 
-(defn map->query-params [query-params-map]
-  (loop [params* (transient [])
-         kvs (seq query-params-map)]
-    (if kvs
-      (let [[k v] (first kvs)]
-        (recur (conj! params* (str (url-encode (coerce-key k)) "=" (url-encode (str v)))) (next kvs)))
-      (str/join "&" (persistent! params*)))))
-
 (defn map->form-params [form-params-map]
   (loop [params* (transient [])
          kvs (seq form-params-map)]
@@ -136,30 +129,6 @@
             param (str (url-encode (coerce-key k)) "=" v)]
         (recur (conj! params* param) (next kvs)))
       (str/join "&" (persistent! params*)))))
-
-(defn basic-auth-value [x]
-  (let [[user pass] (if (sequential? x) x [(clojure.core/get x :user) (clojure.core/get x :pass)])
-        basic-auth (str user ":" pass)]
-    (str "Basic " (.encodeToString (Base64/getEncoder) (.getBytes basic-auth "UTF-8")))))
-
-(defn with-basic-auth [opts]
-  (if-let [basic-auth (:basic-auth opts)]
-    (let [headers (:headers opts)
-          auth (basic-auth-value basic-auth)
-          headers (assoc headers :authorization auth)
-          opts (assoc opts :headers headers)]
-      opts)
-    opts))
-
-(defn with-accept-header [opts]
-  (if-let [accept (:accept opts)]
-    (let [headers (:headers opts)
-          accept-header (case accept
-                          :json "application/json")
-          headers (assoc headers :accept accept-header)
-          opts (assoc opts :headers headers)]
-      opts)
-    opts))
 
 (defn ->request-builder ^HttpRequest$Builder [opts]
   (let [{:keys [expect-continue
@@ -177,87 +146,18 @@
       uri                      (.uri (URI/create uri))
       version                  (.version (version-keyword->version-enum version)))))
 
-(defn with-query-params [opts]
-  (if-let [qp (:query-params opts)]
-    (assoc opts :uri (str (:uri opts) "?" (map->query-params qp)))
-   opts))
+(defn apply-interceptors [init interceptors k]
+  (reduce (fn [acc i]
+            (if-let [f (clojure.core/get k i)]
+              (f acc)
+              acc))
+          init interceptors))
 
-(defn with-form-params [opts]
-  (if-let [fp (:form-params opts)]
-    (let [opts (assoc opts :body (map->form-params fp))
-          ct (get-in opts [:headers :content-type])]
-      (if ct
-        opts
-        (assoc-in opts [:headers :content-type] "application/x-www-form-urlencoded")))
-    opts))
-
-(def default-request-interceptors
-  [with-accept-header
-   with-basic-auth
-   with-query-params
-   with-form-params])
-
-(defmulti decompress-body
-  (fn [resp]
-    (when-let [encoding (get-in resp [:headers "content-encoding"])]
-      (str/lower-case encoding))))
-
-(defn gunzip
-  "Returns a gunzip'd version of the given byte array or input stream."
-  [b]
-  (when b
-    (when (instance? java.io.InputStream b)
-      (GZIPInputStream. b))))
-
-(defmethod decompress-body "gzip"
-  [resp]
-  (update resp :body gunzip))
-
-(defn inflate
-  "Returns a zlib inflate'd version of the given byte array or InputStream."
-  [b]
-  (when b
-    ;; This weirdness is because HTTP servers lie about what kind of deflation
-    ;; they're using, so we try one way, then if that doesn't work, reset and
-    ;; try the other way
-    (let [stream (java.io.BufferedInputStream. b)
-          _ (.mark stream 512)
-          iis (InflaterInputStream. stream)
-          readable? (try (.read iis) true
-                         (catch ZipException _ false))
-          _ (.reset stream)
-          iis' (if readable?
-                 (InflaterInputStream. stream)
-                 (InflaterInputStream. stream (Inflater. true)))]
-
-      iis')))
-
-(defmethod decompress-body "deflate"
-  [resp]
-  (update resp :body inflate))
-
-(defmethod decompress-body :default [resp]
-  resp)
-
-(defn- with-decompressed-body
-  [resp]
-  (if (false? (:decompress-body (:request resp)))
-    resp
-    (decompress-body resp)))
-
-(defn map->request
-  (^HttpRequest [req-map] (.build (->request-builder ((apply comp (reverse default-request-interceptors)) req-map)))))
-
-(def ^:private bh-of-string (HttpResponse$BodyHandlers/ofString))
-(def ^:private bh-of-input-stream (HttpResponse$BodyHandlers/ofInputStream))
-(def ^:private bh-of-byte-array (HttpResponse$BodyHandlers/ofByteArray))
-
-#_(defn- ->body-handler [mode]
-  (case mode
-    nil bh-of-string
-    :string bh-of-string
-    :stream bh-of-input-stream
-    :bytes bh-of-byte-array))
+(defn ring->HttpRequest
+  (^HttpRequest [req-map]
+   (let [request-interceptors (or (:interceptors req-map)
+                                  interceptors/default-interceptors)]
+     (.build (->request-builder (apply-interceptors req-map request-interceptors :request))))))
 
 (defn- version-enum->version-keyword [^HttpClient$Version version]
   (case (.name version)
@@ -274,32 +174,29 @@
                                         (vec v))]))
                   (.map (.headers resp)))})
 
-
-(defn stream-bytes [is]
-  (let [baos (java.io.ByteArrayOutputStream.)]
-    (io/copy is baos)
-    (.toByteArray baos)))
-
-(defn with-decoded-body [resp]
-  (let [as (or (-> resp :request :as) :string)
-        body (:body resp)
-        body (case as
-               :string (slurp body)
-               :stream body
-               :bytes (stream-bytes body))]
-    (assoc resp :body body)))
-
-(def default-response-interceptors
-  [with-decompressed-body
-   with-decoded-body])
+(defn then [x f]
+  (if (instance? java.util.concurrent.CompletableFuture x)
+    (.thenApply ^java.util.concurrent.CompletableFuture x
+                ^java.util.function.Function
+                (reify java.util.function.Function
+                  (apply [_ args]
+                    (f args))))
+    (f x)))
 
 (defn request
   [{:keys [client raw] :as req}]
   (let [^HttpClient client (or client @default-client)
-        req' (map->request req)
-        resp (.send client req' (HttpResponse$BodyHandlers/ofInputStream))]
+        req' (ring->HttpRequest req)
+        resp (if (:async req)
+               (.sendAsync client req' (HttpResponse$BodyHandlers/ofInputStream))
+               (.send client req' (HttpResponse$BodyHandlers/ofInputStream)))]
     (if raw resp
-      (let [resp (response->map resp)
-            resp (assoc resp :request req)
-            interceptor (apply comp (reverse default-response-interceptors))]
-        (interceptor resp)))))
+        (let [resp (then resp response->map)
+              resp (then resp (fn [resp]
+                                (assoc resp :request req)))]
+          (reduce (fn [resp interceptor]
+                    (if-let [f (:response interceptor)]
+                      (then resp f)
+                      resp))
+                  resp (reverse (or (:interceptors req)
+                                    interceptors/default-interceptors)))))))

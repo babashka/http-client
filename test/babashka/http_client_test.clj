@@ -1,5 +1,6 @@
 (ns babashka.http-client-test
   (:require [babashka.http-client :as client]
+            [babashka.http-client.interceptors :as interceptors]
             [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
@@ -248,3 +249,17 @@
 
   (testing "follow redirects set to false"
     (is (= 302 (:status (client/get "https://httpstat.us/302" {:client (client/client {:follow-redirects false})}))))))
+
+#_(deftest interceptor-test
+  (let [json-response (fn [response]
+                        (let [req (:request response)
+                              as (:as req)]
+                          (if (= :json as)
+                            (update response :body #(json/parse-string % true))
+                            response)))
+        response-interceptor-chain (conj interceptors/default-response-interceptors json-response)]
+    (-> (client/get "https://httpstat.us/200"
+                    {:headers {"Accept" "application/json"}})
+        :body
+        (json/parse-string true)
+        :code)))
