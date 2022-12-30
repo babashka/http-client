@@ -85,11 +85,11 @@
         (is (str/includes? (-> body :form :filename) "foo"))
         (prn body)))))
 
-;; (deftest patch-test
-;;   (is (str/includes?
-;;        (:body (client/patch "https://postman-echo.com/patch"
-;;                           {:body "hello"}))
-;;        "hello")))
+(deftest patch-test
+  (is (str/includes?
+       (:body (client/patch "https://postman-echo.com/patch"
+                          {:body "hello"}))
+       "hello")))
 
 ;; (deftest basic-auth-test
 ;;   (is (re-find #"authenticated.*true"

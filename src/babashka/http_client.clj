@@ -184,3 +184,10 @@
   ([uri opts]
    (let [opts (assoc opts :uri uri :method :post)]
      (request opts))))
+
+(defn patch
+  ([url] (patch url nil))
+  ([url opts]
+   (let [opts (assoc opts :uri url
+                     :method :patch)]
+     (request opts))))
