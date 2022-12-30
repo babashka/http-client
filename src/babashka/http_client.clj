@@ -33,7 +33,7 @@
   (reify Supplier
     (get [_this] s)))
 
-(defn- convert-body-publisher [body]
+(defn- ->body-publisher [body]
   (cond
     (nil? body)
     (HttpRequest$BodyPublishers/noBody)
@@ -45,7 +45,14 @@
     (HttpRequest$BodyPublishers/ofInputStream (input-stream-supplier body))
 
     (bytes? body)
-    (HttpRequest$BodyPublishers/ofByteArray body)))
+    (HttpRequest$BodyPublishers/ofByteArray body)
+
+    (instance? java.io.File body)
+    (HttpRequest$BodyPublishers/ofString (slurp body))
+
+    :else
+    (throw (ex-info (str "Don't know how to convert " (type body) "to body")
+                    {:body body}))))
 
 (defn- version-keyword->version-enum [version]
   (case version
@@ -91,7 +98,7 @@
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
       (seq headers)            (.headers (into-array String (eduction convert-headers-xf headers)))
-      method                   (.method (method-keyword->str method) (convert-body-publisher body))
+      method                   (.method (method-keyword->str method) (->body-publisher body))
       timeout                  (.timeout (convert-timeout timeout))
       uri                      (.uri (URI/create uri))
       version                  (.version (version-keyword->version-enum version)))))
@@ -148,4 +155,10 @@
   ([uri] (head uri nil))
   ([uri opts]
    (let [opts (assoc opts :uri uri :method :head)]
+     (request opts))))
+
+(defn post
+  ([uri] (post uri nil))
+  ([uri opts]
+   (let [opts (assoc opts :uri uri :method :post)]
      (request opts))))

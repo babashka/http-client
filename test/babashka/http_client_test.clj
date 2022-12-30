@@ -32,58 +32,58 @@
 (deftest head-test
   (is (= 200 (:status (client/head "https://postman-echo.com/head")))))
 
-;; (deftest post-test
-;;   (is (subs (:body (client/post "https://postman-echo.com/post"))
-;;             0 10))
-;;   (is (str/includes?
-;;        (:body (client/post "https://postman-echo.com/post"
-;;                          {:body "From Clojure"}))
-;;        "From Clojure"))
-;;   (testing "file body"
-;;     (is (str/includes?
-;;          (:body (client/post "https://postman-echo.com/post"
-;;                            {:body (io/file "README.md")}))
-;;          "babashka.curl")))
-;;   (testing "JSON body"
-;;     (let [response (client/post "https://postman-echo.com/post"
-;;                               {:headers {"Content-Type" "application/json"}
-;;                                :body (json/generate-string {:a "foo"})})
-;;           body (:body response)
-;;           body (json/parse-string body true)
-;;           json (:json body)]
-;;       (is (= {:a "foo"} json))))
-;;   (testing "stream body"
-;;     (is (str/includes?
-;;          (:body (client/post "https://postman-echo.com/post"
-;;                            {:body (io/input-stream "README.md")}))
-;;          "babashka.curl")))
-;;   (testing "form-params"
-;;     (let [body (:body (client/post "https://postman-echo.com/post"
-;;                                  {:form-params {"name" "Michiel Borkent"
-;;                                                 :location "NL"
-;;                                                 :this-isnt-a-string 42}}))
-;;           body (json/parse-string body true)
-;;           headers (:headers body)
-;;           content-type (:content-type headers)]
-;;       (is (= "application/x-www-form-urlencoded" content-type))))
-;;   ;; TODO:
-;;   #_(testing "multipart"
-;;     (testing "posting file"
-;;       (let [tmp-file (java.io.File/createTempFile "foo" "bar")
-;;             _ (spit tmp-file "Michiel Borkent")
-;;             _ (.deleteOnExit tmp-file)
-;;             body (:body (client/post "https://postman-echo.com/post"
-;;                                    {:multipart [{:name "file"
-;;                                                  :content (io/file tmp-file)}
-;;                                                 {:name "filename" :content (.getPath tmp-file)}
-;;                                                 ["file2" (io/file tmp-file)]]}))
-;;             body (json/parse-string body true)
-;;             headers (:headers body)
-;;             content-type (:content-type headers)]
-;;         (is (str/starts-with? content-type "multipart/form-data"))
-;;         (is (:files body))
-;;         (is (str/includes? (-> body :form :filename) "foo"))
-;;         (prn body)))))
+(deftest post-test
+  (is (subs (:body (client/post "https://postman-echo.com/post"))
+            0 10))
+  (is (str/includes?
+       (:body (client/post "https://postman-echo.com/post"
+                         {:body "From Clojure"}))
+       "From Clojure"))
+  (testing "file body"
+    (is (str/includes?
+         (:body (client/post "https://postman-echo.com/post"
+                           {:body (io/file "README.md")}))
+         "babashka")))
+  (testing "JSON body"
+    (let [response (client/post "https://postman-echo.com/post"
+                              {:headers {"Content-Type" "application/json"}
+                               :body (json/generate-string {:a "foo"})})
+          body (:body response)
+          body (json/parse-string body true)
+          json (:json body)]
+      (is (= {:a "foo"} json))))
+  (testing "stream body"
+    (is (str/includes?
+         (:body (client/post "https://postman-echo.com/post"
+                           {:body (io/input-stream "README.md")}))
+         "babashka")))
+  #_(testing "form-params"
+    (let [body (:body (client/post "https://postman-echo.com/post"
+                                 {:form-params {"name" "Michiel Borkent"
+                                                :location "NL"
+                                                :this-isnt-a-string 42}}))
+          body (json/parse-string body true)
+          headers (:headers body)
+          content-type (:content-type headers)]
+      (is (= "application/x-www-form-urlencoded" content-type))))
+  ;; TODO:
+  #_(testing "multipart"
+    (testing "posting file"
+      (let [tmp-file (java.io.File/createTempFile "foo" "bar")
+            _ (spit tmp-file "Michiel Borkent")
+            _ (.deleteOnExit tmp-file)
+            body (:body (client/post "https://postman-echo.com/post"
+                                   {:multipart [{:name "file"
+                                                 :content (io/file tmp-file)}
+                                                {:name "filename" :content (.getPath tmp-file)}
+                                                ["file2" (io/file tmp-file)]]}))
+            body (json/parse-string body true)
+            headers (:headers body)
+            content-type (:content-type headers)]
+        (is (str/starts-with? content-type "multipart/form-data"))
+        (is (:files body))
+        (is (str/includes? (-> body :form :filename) "foo"))
+        (prn body)))))
 
 ;; (deftest patch-test
 ;;   (is (str/includes?

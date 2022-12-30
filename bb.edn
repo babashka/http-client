@@ -1,2 +1,2 @@
 {:tasks
- {test:clj (clojure "-X:test")}}
+ {test:clj (apply clojure "-M:test" *command-line-args*)}}
