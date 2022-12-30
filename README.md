@@ -100,22 +100,9 @@ Basic auth:
 ;; => "{\"authenticated\":true}"
 ```
 
-### Download binary
-
-Download a binary file:
-
-``` clojure
-(io/copy
-  (:body (client/get "https://github.com/babashka/babashka/raw/master/logo/icon.png"
-    {:as :bytes}))
-  (io/file "icon.png"))
-(.length (io/file "icon.png"))
-;;=> 7748
-```
-
 ### Streaming
 
-With `:as :stream`
+With `:as :stream`:
 
 ``` clojure
 (:body (client/get "https://github.com/babashka/babashka/raw/master/logo/icon.png"
@@ -123,6 +110,21 @@ With `:as :stream`
 ```
 
 will return the raw input stream.
+
+### Download binary
+
+Download a binary file:
+
+``` clojure
+(io/copy
+  (:body (client/get "https://github.com/babashka/babashka/raw/master/logo/icon.png"
+    {:as :stream}))
+  (io/file "icon.png"))
+(.length (io/file "icon.png"))
+;;=> 7748
+```
+
+To obtain an in-memory byte array you can use `:as :bytes`.
 
 ### URI construction
 
