@@ -50,6 +50,8 @@
     (str "Basic " (.encodeToString (Base64/getEncoder) (.getBytes basic-auth "UTF-8")))))
 
 (def basic-auth
+  "Request: adds `:authorization` header based on `:basic-auth` (a map
+  of `:user` and `:pass`) in request."
   {:name ::basic-auth
    :request (fn [opts]
               (if-let [basic-auth (:basic-auth opts)]
