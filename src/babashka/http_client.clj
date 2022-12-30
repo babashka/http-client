@@ -165,20 +165,7 @@
                 timeout
                 uri
                 version
-                body
-                form-params]} opts
-        ;; TODO: middleware
-        uri (if-let [qp (:query-params opts)]
-              (str uri "?" (map->query-params qp))
-              uri)
-        body (if form-params
-               (map->form-params form-params)
-               body)
-        headers (cond (:content-type headers)
-                      headers
-                      form-params
-                      (assoc headers :content-type "application/x-www-form-urlencoded")
-                      :else headers)]
+                body]} opts]
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
       (seq headers)            (.headers (into-array String (coerce-headers headers)))
@@ -187,9 +174,25 @@
       uri                      (.uri (URI/create uri))
       version                  (.version (version-keyword->version-enum version)))))
 
+(defn with-query-params [opts]
+  (if-let [qp (:query-params opts)]
+    (assoc opts :uri (str (:uri opts) "?" (map->query-params qp)))
+   opts))
+
+(defn with-form-params [opts]
+  (if-let [fp (:form-params opts)]
+    (let [opts (assoc opts :body (map->form-params fp))
+          ct (get-in opts [:headers :content-type])]
+      (if ct
+        opts
+        (assoc-in opts [:headers :content-type] "application/x-www-form-urlencoded")))
+    opts))
+
 (def default-request-interceptors
   [with-accept-header
-   with-basic-auth])
+   with-basic-auth
+   with-query-params
+   with-form-params])
 
 (defn ->request
   (^HttpRequest [req-map] (.build (->request-builder ((apply comp default-request-interceptors) req-map)))))
