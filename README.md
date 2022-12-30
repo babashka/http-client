@@ -256,8 +256,12 @@ To execute request asynchronously, use `:async true`. The response will be a
 $ bb test:clj
 ```
 
+## Credits
+
+This library has borrowed liberally from [java-http-clj](https://github.com/schmee/java-http-clj) and [hato](https://github.com/gnarroway/hato), both available under the MIT license.
+
 ## License
 
 Copyright © 2022 - 2023 Michiel Borkent
 
-Distributed under the EPL License, same as Clojure. See LICENSE.
+Distributed under the MIT License. See LICENSE.
