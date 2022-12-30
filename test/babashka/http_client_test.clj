@@ -229,16 +229,10 @@
       (is (= 404 (:status response)))
       )))
 
-;; (deftest compressed-test
-;;   (is (-> (client/get "https://api.stackexchange.com/2.2/sites")
-;;           :body (json/parse-string true) :items))
-;;   (is (thrown?
-;;        Exception
-;;        ;; the stackexchange API ALWAYS returns a gzipped response but we ask
-;;        ;; curl to not decompress it
-;;        (-> (client/get "https://api.stackexchange.com/2.2/sites"
-;;                      {:compressed false})
-;;            :body (json/parse-string true) :items))))
+(deftest compressed-test
+  (let [resp (client/get "https://api.stackexchange.com/2.2/sites"
+                         {:headers {"Accept-Encoding" ["gzip" "deflate"]}})]
+    (is (-> resp :body (json/parse-string true) :items))))
 
 ;; (deftest header-with-keyword-key-test
 ;;   (is (= 200

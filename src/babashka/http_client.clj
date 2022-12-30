@@ -1,6 +1,7 @@
 (ns babashka.http-client
   (:refer-clojure :exclude [send get])
-  (:require [clojure.string :as str])
+  (:require [clojure.string :as str]
+            [clojure.java.io :as io])
   (:import [java.net URI URLEncoder]
            [java.net.http
             HttpClient
@@ -15,7 +16,9 @@
            [java.util.concurrent CompletableFuture]
            [java.util.function Function Supplier]
            [java.util Base64]
-           [java.time Duration]))
+           [java.time Duration]
+           [java.util.zip
+            GZIPInputStream InflaterInputStream ZipException Inflater]))
 
 (defn- ->follow-redirect [redirect]
   (case redirect
@@ -194,14 +197,62 @@
    with-query-params
    with-form-params])
 
-(defn ->request
-  (^HttpRequest [req-map] (.build (->request-builder ((apply comp default-request-interceptors) req-map)))))
+(defmulti decompress-body
+  (fn [resp]
+    (when-let [encoding (get-in resp [:headers "content-encoding"])]
+      (str/lower-case encoding))))
+
+(defn gunzip
+  "Returns a gunzip'd version of the given byte array or input stream."
+  [b]
+  (when b
+    (when (instance? java.io.InputStream b)
+      (GZIPInputStream. b))))
+
+(defmethod decompress-body "gzip"
+  [resp]
+  (update resp :body gunzip))
+
+(defn inflate
+  "Returns a zlib inflate'd version of the given byte array or InputStream."
+  [b]
+  (when b
+    ;; This weirdness is because HTTP servers lie about what kind of deflation
+    ;; they're using, so we try one way, then if that doesn't work, reset and
+    ;; try the other way
+    (let [stream (java.io.BufferedInputStream. b)
+          _ (.mark stream 512)
+          iis (InflaterInputStream. stream)
+          readable? (try (.read iis) true
+                         (catch ZipException _ false))
+          _ (.reset stream)
+          iis' (if readable?
+                 (InflaterInputStream. stream)
+                 (InflaterInputStream. stream (Inflater. true)))]
+
+      iis')))
+
+(defmethod decompress-body "deflate"
+  [resp]
+  (update resp :body inflate))
+
+(defmethod decompress-body :default [resp]
+  resp)
+
+(defn- with-decompressed-body
+  [resp]
+  (if (false? (:decompress-body (:request resp)))
+    resp
+    (decompress-body resp)))
+
+(defn map->request
+  (^HttpRequest [req-map] (.build (->request-builder ((apply comp (reverse default-request-interceptors)) req-map)))))
 
 (def ^:private bh-of-string (HttpResponse$BodyHandlers/ofString))
 (def ^:private bh-of-input-stream (HttpResponse$BodyHandlers/ofInputStream))
 (def ^:private bh-of-byte-array (HttpResponse$BodyHandlers/ofByteArray))
 
-(defn- ->body-handler [mode]
+#_(defn- ->body-handler [mode]
   (case mode
     nil bh-of-string
     :string bh-of-string
@@ -223,12 +274,35 @@
                                         (vec v))]))
                   (.map (.headers resp)))})
 
+
+(defn stream-bytes [is]
+  (let [baos (java.io.ByteArrayOutputStream.)]
+    (io/copy is baos)
+    (.toByteArray baos)))
+
+(defn with-decoded-body [resp]
+  (let [as (or (-> resp :request :as) :string)
+        body (:body resp)
+        body (case as
+               :string (slurp body)
+               :stream body
+               :bytes (stream-bytes body))]
+    (assoc resp :body body)))
+
+(def default-response-interceptors
+  [with-decompressed-body
+   with-decoded-body])
+
 (defn request
-  [{:keys [client raw as] :as req}]
+  [{:keys [client raw] :as req}]
   (let [^HttpClient client (or client @default-client)
-        req' (->request req)
-        resp (.send client req' (->body-handler as))]
-    (if raw resp (response->map resp))))
+        req' (map->request req)
+        resp (.send client req' (HttpResponse$BodyHandlers/ofInputStream))]
+    (if raw resp
+      (let [resp (response->map resp)
+            resp (assoc resp :request req)
+            interceptor (apply comp (reverse default-response-interceptors))]
+        (interceptor resp)))))
 
 (defn get
   ([uri] (get uri nil))
