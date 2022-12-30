@@ -8,9 +8,9 @@ See [API.md](API.md).
 
 ## Status
 
-This library is in flux. It can be used in production, but expect breaking
-changes. When this library is considered stable (API-wise) it will be built into
-babashka.
+This library is in flux. Feedback is welcome. It can be used in production, but
+expect breaking changes. When this library is considered stable (API-wise) it
+will be built into babashka.
 
 ## Usage
 
