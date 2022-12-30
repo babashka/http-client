@@ -1,6 +1,6 @@
 # Http-client
 
-An HTTP client for clojure and babashka.
+An HTTP client for Clojure and Babashka built on `java.net.http`.
 
 ## API
 
