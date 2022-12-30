@@ -22,12 +22,21 @@
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
 
-(def ^:private convert-headers-xf
+(defn- coerce-key
+  "Coerces a key to str"
+  [k]
+  (if (keyword? k)
+    (-> k str (subs 1))
+    (str k)))
+
+(defn ^:private coerce-headers
+  [headers]
   (mapcat
-   (fn [[k v :as p]]
+   (fn [[k v]]
      (if (sequential? v)
-       (interleave (repeat k) v)
-       p))))
+       (interleave (repeat (coerce-key k)) v)
+       [(coerce-key k) v]))
+   headers))
 
 (defn- input-stream-supplier [s]
   (reify Supplier
@@ -69,19 +78,22 @@
   [^String unencoded]
   (URLEncoder/encode unencoded "UTF-8"))
 
-(defn- coerce-key
-  "Coreces a key to str"
-  [k]
-  (if (keyword? k)
-    (-> k str (subs 1))
-    (str k)))
-
 (defn map->query-params [query-params-map]
   (loop [params* (transient [])
          kvs (seq query-params-map)]
     (if kvs
       (let [[k v] (first kvs)]
         (recur (conj! params* (str (url-encode (coerce-key k)) "=" (url-encode (str v)))) (next kvs)))
+      (str/join "&" (persistent! params*)))))
+
+(defn map->form-params [form-params-map]
+  (loop [params* (transient [])
+         kvs (seq form-params-map)]
+    (if kvs
+      (let [[k v] (first kvs)
+            v (url-encode (str v))
+            param (str (url-encode (coerce-key k)) "=" v)]
+        (recur (conj! params* param) (next kvs)))
       (str/join "&" (persistent! params*)))))
 
 (defn ->request-builder ^HttpRequest$Builder [opts]
@@ -91,13 +103,23 @@
                 timeout
                 uri
                 version
-                body]} opts
+                body
+                form-params]} opts
+        ;; TODO: middleware
         uri (if-let [qp (:query-params opts)]
               (str uri "?" (map->query-params qp))
-              uri)]
+              uri)
+        body (if form-params
+               (map->form-params form-params)
+               body)
+        headers (cond (:content-type headers)
+                      headers
+                      form-params
+                      (assoc headers :content-type "application/x-www-form-urlencoded")
+                      :else headers)]
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
-      (seq headers)            (.headers (into-array String (eduction convert-headers-xf headers)))
+      (seq headers)            (.headers (into-array String (coerce-headers headers)))
       method                   (.method (method-keyword->str method) (->body-publisher body))
       timeout                  (.timeout (convert-timeout timeout))
       uri                      (.uri (URI/create uri))

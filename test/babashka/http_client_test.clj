@@ -57,7 +57,7 @@
          (:body (client/post "https://postman-echo.com/post"
                            {:body (io/input-stream "README.md")}))
          "babashka")))
-  #_(testing "form-params"
+  (testing "form-params"
     (let [body (:body (client/post "https://postman-echo.com/post"
                                  {:form-params {"name" "Michiel Borkent"
                                                 :location "NL"
