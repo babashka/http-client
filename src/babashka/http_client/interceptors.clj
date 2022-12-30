@@ -164,7 +164,7 @@
                  (assoc resp :body body)))})
 
 (def construct-uri
-  "Request"
+  "Request: construct uri from map"
   {:name ::construct-uri
    :request (fn [req]
               (let [uri (:uri req)
@@ -180,9 +180,23 @@
                               :else uri)]
                 (assoc req :uri uri)))})
 
+(def unexceptional-statuses
+  #{200 201 202 203 204 205 206 207 300 301 302 303 304 307})
+
+(def throw-on-exceptional-status-code
+  "Response: throw on exceptional status codes"
+  {:name ::throw-on-exceptional-status-code
+   :response (fn [resp]
+               (let [status (:status resp)]
+                 (if (or (false? (some-> resp :request :throw))
+                         (contains? unexceptional-statuses status))
+                   resp
+                   (throw (ex-info (str "Exceptional status code: " status) resp)))))})
+
 (def default-interceptors
   "Default interceptor chain. Interceptors are called in order for request and in reverse order for response."
-  [construct-uri
+  [throw-on-exceptional-status-code
+   construct-uri
    accept-header
    basic-auth
    query-params

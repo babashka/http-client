@@ -213,12 +213,11 @@
       (is (= (repeat 2 "data: Stream Hello!") (take 2 (line-seq (io/reader body)))))
       (is (= (repeat 10 "data: Stream Hello!") (take 10 (line-seq (io/reader body))))))))
 
-#_(deftest exceptional-status-test
+(deftest exceptional-status-test
     (testing "should throw"
       (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404")))
             response (ex-data ex)]
-        (is (= 404 (:status response)))
-        (is (zero? (:exit response)))))
+        (is (= 404 (:status response)))))
     (testing "should throw when streaming based on status code"
       (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404" {:throw true
                                                                                  :as :stream})))
@@ -227,8 +226,7 @@
         (is (= "404 Not Found" (slurp (:body response))))))
     (testing "should not throw"
       (let [response (client/get "https://httpstat.us/404" {:throw false})]
-        (is (= 404 (:status response)))
-        )))
+        (is (= 404 (:status response))))))
 
 (deftest compressed-test
   (let [resp (client/get "https://api.stackexchange.com/2.2/sites"

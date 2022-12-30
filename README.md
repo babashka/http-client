@@ -12,12 +12,6 @@ This library is in flux. Feedback is welcome. It can be used in production, but
 expect breaking changes. When this library is considered stable (API-wise) it
 will be built into babashka.
 
-## TODO
-
-- [ ] Throw on exceptional status codes like `404`, etc.
-
-## Usage
-
 The APIs in this library are mostly compatible with
 [babashka.curl](https://github.com/babashka/babashka.curl), which is in turn
 inspired by libraries like [clj-http](https://github.com/dakrone/clj-http).
@@ -165,35 +159,33 @@ The default client is configured to always follow redirects. To opt out of this 
 ;; => 200
 ```
 
-<!-- ### Exceptions -->
+### Exceptions
 
-<!-- An `ExceptionInfo` will be thrown for all HTTP response status codes other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}` -->
-<!-- or if `curl` exited with a non-zero exit code. The response map is the exception data. -->
+An `ExceptionInfo` will be thrown for all HTTP response status codes other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`.
 
-<!-- ```clojure -->
-<!-- (client/get "https://httpstat.us/404") -->
-<!-- ;;=> Execution error (ExceptionInfo) at babashka.client/request (curl.clj:228). -->
-<!--      status 404 -->
+```clojure
+(client/get "https://httpstat.us/404")
+;;=> Execution error (ExceptionInfo) at babashka.client/request (curl.clj:228).
+     status 404
+(:status (ex-data *e))
+;;=> 404
+ ```
 
-<!-- (:status (ex-data *e)) -->
-<!-- ;;=> 404 -->
-<!-- ``` -->
+To opt out of an exception being thrown, set `:throw` to false.
 
-<!-- To opt out of an exception being thrown, set `:throw` to false. -->
+```clojure
+(:status (client/get "https://httpstat.us/404" {:throw false}))
+;;=> 404
+```
 
-<!-- ```clojure -->
-<!-- (:status (client/get "https://httpstat.us/404" {:throw false})) -->
-<!-- ;;=> 404 -->
-<!-- ``` -->
+If the body is being returned as a stream then exceptions are never thrown and the `:exit` value is wrapped in a `Delay`.
 
-<!-- If the body is being returned as a stream then exceptions are never thrown and the `:exit` value is wrapped in a `Delay`. -->
-
-<!-- ```clojure -->
-<!-- (:exit (client/get "https://httpstat.us/404" {:as :stream})) -->
-<!-- ;;=> #object[clojure.lang.Delay 0x75769ab0 {:status :pending, :val nil}] -->
-<!-- (force *1) -->
-<!-- ;;=> 0 -->
-<!-- ``` -->
+```clojure
+(:exit (client/get "https://httpstat.us/404" {:as :stream}))
+;;=> #object[clojure.lang.Delay 0x75769ab0 {:status :pending, :val nil}]
+(force *1)
+;;=> 0
+```
 
 ### Compression
 
