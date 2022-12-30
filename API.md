@@ -12,7 +12,7 @@
     -  [`basic-auth`](#babashka.http-client.interceptors/basic-auth) - Request: adds <code>:authorization</code> header based on <code>:basic-auth</code> (a map of <code>:user</code> and <code>:pass</code>) in request.
     -  [`decode-body`](#babashka.http-client.interceptors/decode-body) - Response: based on the value of <code>:as</code> in request, decodes as <code>:string</code>, <code>:stream</code> or <code>:bytes</code>.
     -  [`decompress-body`](#babashka.http-client.interceptors/decompress-body) - Response: decompresses body based on "content-encoding" header.
-    -  [`default-interceptors`](#babashka.http-client.interceptors/default-interceptors)
+    -  [`default-interceptors`](#babashka.http-client.interceptors/default-interceptors) - Default interceptor chain.
     -  [`form-params`](#babashka.http-client.interceptors/form-params) - Request: encodes <code>:form-params</code> map and adds <code>:body</code>.
     -  [`query-params`](#babashka.http-client.interceptors/query-params) - Request: encodes <code>:query-params</code> map and appends to <code>:uri</code>.
 
@@ -114,8 +114,10 @@ Response: based on the value of `:as` in request, decodes as `:string`, `:stream
 
 Response: decompresses body based on  "content-encoding" header. Valid values: `gzip` and `deflate`.
 
-## <a name="babashka.http-client.interceptors/default-interceptors">`default-interceptors`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L166-L172)
+## <a name="babashka.http-client.interceptors/default-interceptors">`default-interceptors`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L166-L173)
 <a name="babashka.http-client.interceptors/default-interceptors"></a>
+
+Default interceptor chain. Interceptors are called in order for request and in reverse order for response.
 
 ## <a name="babashka.http-client.interceptors/form-params">`form-params`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L87-L97)
 <a name="babashka.http-client.interceptors/form-params"></a>

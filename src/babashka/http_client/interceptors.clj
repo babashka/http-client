@@ -164,6 +164,7 @@
                  (assoc resp :body body)))})
 
 (def default-interceptors
+  "Default interceptor chain. Interceptors are called in order for request and in reverse order for response."
   [accept-header
    basic-auth
    query-params
