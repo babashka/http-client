@@ -155,9 +155,7 @@
 
 (defn ring->HttpRequest
   (^HttpRequest [req-map]
-   (let [request-interceptors (or (:interceptors req-map)
-                                  interceptors/default-interceptors)]
-     (.build (->request-builder (apply-interceptors req-map request-interceptors :request))))))
+   (.build (->request-builder req-map))))
 
 (defn- version-enum->version-keyword [^HttpClient$Version version]
   (case (.name version)
@@ -186,6 +184,9 @@
 (defn request
   [{:keys [client raw] :as req}]
   (let [^HttpClient client (or client @default-client)
+        request-interceptors (or (:interceptors req)
+                                 interceptors/default-interceptors)
+        req (apply-interceptors req request-interceptors :request)
         req' (ring->HttpRequest req)
         resp (if (:async req)
                (.sendAsync client req' (HttpResponse$BodyHandlers/ofInputStream))

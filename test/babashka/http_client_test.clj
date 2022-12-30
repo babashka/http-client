@@ -214,21 +214,21 @@
       (is (= (repeat 10 "data: Stream Hello!") (take 10 (line-seq (io/reader body))))))))
 
 #_(deftest exceptional-status-test
-  (testing "should throw"
-    (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404")))
-          response (ex-data ex)]
-      (is (= 404 (:status response)))
-      (is (zero? (:exit response)))))
-  (testing "should throw when streaming based on status code"
-    (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404" {:throw true
-                                                                               :as :stream})))
-          response (ex-data ex)]
-      (is (= 404 (:status response)))
-      (is (= "404 Not Found" (slurp (:body response))))))
-  (testing "should not throw"
-    (let [response (client/get "https://httpstat.us/404" {:throw false})]
-      (is (= 404 (:status response)))
-      )))
+    (testing "should throw"
+      (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404")))
+            response (ex-data ex)]
+        (is (= 404 (:status response)))
+        (is (zero? (:exit response)))))
+    (testing "should throw when streaming based on status code"
+      (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404" {:throw true
+                                                                                 :as :stream})))
+            response (ex-data ex)]
+        (is (= 404 (:status response)))
+        (is (= "404 Not Found" (slurp (:body response))))))
+    (testing "should not throw"
+      (let [response (client/get "https://httpstat.us/404" {:throw false})]
+        (is (= 404 (:status response)))
+        )))
 
 (deftest compressed-test
   (let [resp (client/get "https://api.stackexchange.com/2.2/sites"
@@ -238,7 +238,7 @@
 (deftest header-with-keyword-key-test
   (is (= 200
          (-> (client/get "https://httpstat.us/200"
-                       {:headers {:accept "application/json"}})
+                         {:headers {:accept "application/json"}})
              :body
              (json/parse-string true)
              :code))))
@@ -250,16 +250,27 @@
   (testing "follow redirects set to false"
     (is (= 302 (:status (client/get "https://httpstat.us/302" {:client (client/client {:follow-redirects false})}))))))
 
-#_(deftest interceptor-test
-  (let [json-response (fn [response]
-                        (let [req (:request response)
-                              as (:as req)]
-                          (if (= :json as)
-                            (update response :body #(json/parse-string % true))
-                            response)))
-        response-interceptor-chain (conj interceptors/default-response-interceptors json-response)]
-    (-> (client/get "https://httpstat.us/200"
-                    {:headers {"Accept" "application/json"}})
-        :body
-        (json/parse-string true)
-        :code)))
+(deftest interceptor-test
+  (let [json-interceptor
+        {:name ::json
+         :description
+         "A request with `:as :json` will automatically get the
+         \"application/json\" accept header and the response is decoded as JSON."
+         :request (fn [request]
+                    (if (= :json (:as request))
+                      (-> (assoc-in request [:headers :accept] "application/json")
+                          ;; Read body as :string
+                          ;; Mark request as amenable to json decoding
+                          (assoc :as :string ::json true))
+                      request))
+         :response (fn [response]
+                     (if (get-in response [:request ::json])
+                       (update response :body #(json/parse-string % true))
+                       response))}
+        ;; Add json interceptor add beginning of chain
+        ;; It will be the first to see the request and the last to see the response
+        interceptors (cons json-interceptor interceptors/default-interceptors)
+        resp (client/get "https://httpstat.us/200"
+                         {:interceptors interceptors
+                          :as :json})]
+    (is (= 200 (-> resp :body :code)))))

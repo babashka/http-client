@@ -153,7 +153,8 @@
                      body (case as
                             :string (slurp body)
                             :stream body
-                            :bytes (stream-bytes body))]
+                            :bytes (stream-bytes body)
+                            body)]
                  (assoc resp :body body)))})
 
 (def default-interceptors
