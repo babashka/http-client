@@ -12,7 +12,15 @@ This library is in flux. Feedback is welcome. It can be used in production, but
 expect breaking changes. When this library is considered stable (API-wise) it
 will be built into babashka.
 
+## TODO
+
+- [ ] Throw on exceptional status codes like `404`, etc.
+
 ## Usage
+
+The APIs in this library are mostly compatible with
+[babashka.curl](https://github.com/babashka/babashka.curl), which is in turn
+inspired by libraries like [clj-http](https://github.com/dakrone/clj-http).
 
 ``` clojure
 (require '[babashka.http-client :as client])
@@ -239,6 +247,16 @@ function is executed on the response. Default interceptors are in
 `babashka.http-client.interceptors/default-interceptors`.  Interceptors can be
 configured on the level of requests by passing a modified `:interceptors`
 chain.
+
+### Async
+
+To execute request asynchronously, use `:async true`. The response will be a
+`CompletableFuture` with the response map.
+
+``` clojure
+(-> (client/get "https://clojure.org" {:async true}) .get :status)
+;;=> 200
+```
 
 ## Test
 
