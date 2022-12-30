@@ -49,7 +49,7 @@
         basic-auth (str user ":" pass)]
     (str "Basic " (.encodeToString (Base64/getEncoder) (.getBytes basic-auth "UTF-8")))))
 
-(def basic-auth-request
+(def basic-auth-interceptor
   {:name ::basic-auth
    :request (fn [opts]
               (if-let [basic-auth (:basic-auth opts)]
@@ -60,7 +60,7 @@
                   opts)
                 opts))})
 
-(def accept-header-request
+(def accept-header-interceptor
   {:name ::accept-header
    :request
    (fn [opts]
@@ -73,14 +73,14 @@
          opts)
        opts))})
 
-(def query-params-request
+(def query-params-interceptor
   {:name ::query-params
    :request (fn [opts]
               (if-let [qp (:query-params opts)]
                 (assoc opts :uri (str (:uri opts) "?" (map->query-params qp)))
                 opts))})
 
-(def form-params-request
+(def form-params-interceptor
   {:name ::form-params
    :request (fn [opts]
               (if-let [fp (:form-params opts)]
@@ -133,7 +133,7 @@
 (defmethod decompress-body :default [resp]
   resp)
 
-(def decompressed-body-response
+(def decompress-body-interceptor
   {:name ::decompress
    :response (fn [resp]
                (if (false? (:decompress-body (:request resp)))
@@ -145,7 +145,7 @@
     (io/copy is baos)
     (.toByteArray baos)))
 
-(def decoded-body-response
+(def decode-body-interceptor
   {:name ::decode-body
    :response (fn [resp]
                (let [as (or (-> resp :request :as) :string)
@@ -157,12 +157,12 @@
                  (assoc resp :body body)))})
 
 (def default-interceptors
-  [accept-header-request
-   basic-auth-request
-   query-params-request
-   form-params-request
-   decompressed-body-response
-   decoded-body-response])
+  [accept-header-interceptor
+   basic-auth-interceptor
+   query-params-interceptor
+   form-params-interceptor
+   decode-body-interceptor
+   decompress-body-interceptor])
 
 (defn insert-interceptors-before [chain before & interceptors]
   (let [[pre _ post] (partition-by #(= before %) chain)]

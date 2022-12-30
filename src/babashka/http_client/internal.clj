@@ -146,9 +146,9 @@
       uri                      (.uri (URI/create uri))
       version                  (.version (version-keyword->version-enum version)))))
 
-(defn apply-interceptors [init interceptors k]
+(defn- apply-interceptors [init interceptors k]
   (reduce (fn [acc i]
-            (if-let [f (clojure.core/get k i)]
+            (if-let [f (clojure.core/get i k)]
               (f acc)
               acc))
           init interceptors))
