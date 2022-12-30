@@ -8,15 +8,13 @@
     -  [`post`](#babashka.http-client/post)
     -  [`request`](#babashka.http-client/request)
 -  [`babashka.http-client.interceptors`](#babashka.http-client.interceptors) 
-    -  [`accept-header-interceptor`](#babashka.http-client.interceptors/accept-header-interceptor)
-    -  [`basic-auth-interceptor`](#babashka.http-client.interceptors/basic-auth-interceptor)
-    -  [`decode-body-interceptor`](#babashka.http-client.interceptors/decode-body-interceptor)
-    -  [`decompress-body-interceptor`](#babashka.http-client.interceptors/decompress-body-interceptor)
+    -  [`accept-header`](#babashka.http-client.interceptors/accept-header) - Request: adds <code>:accept</code> header.
+    -  [`basic-auth`](#babashka.http-client.interceptors/basic-auth)
+    -  [`decode-body`](#babashka.http-client.interceptors/decode-body) - Response: based on the value of <code>:as</code> in request, decodes as <code>:string</code>, <code>:stream</code> or <code>:bytes</code>.
+    -  [`decompress-body`](#babashka.http-client.interceptors/decompress-body) - Response: decompresses body based on "content-encoding" header.
     -  [`default-interceptors`](#babashka.http-client.interceptors/default-interceptors)
-    -  [`form-params-interceptor`](#babashka.http-client.interceptors/form-params-interceptor)
-    -  [`insert-interceptors-after`](#babashka.http-client.interceptors/insert-interceptors-after)
-    -  [`insert-interceptors-before`](#babashka.http-client.interceptors/insert-interceptors-before)
-    -  [`query-params-interceptor`](#babashka.http-client.interceptors/query-params-interceptor)
+    -  [`form-params`](#babashka.http-client.interceptors/form-params) - Request: encodes <code>:form-params</code> map and adds <code>:body</code>.
+    -  [`query-params`](#babashka.http-client.interceptors/query-params) - Request: encodes <code>:query-params</code> map and appends to <code>:uri</code>.
 
 -----
 # <a name="babashka.http-client">babashka.http-client</a>
@@ -95,39 +93,33 @@
 
 
 
-## <a name="babashka.http-client.interceptors/accept-header-interceptor">`accept-header-interceptor`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L63-L74)
-<a name="babashka.http-client.interceptors/accept-header-interceptor"></a>
+## <a name="babashka.http-client.interceptors/accept-header">`accept-header`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L63-L75)
+<a name="babashka.http-client.interceptors/accept-header"></a>
 
-## <a name="babashka.http-client.interceptors/basic-auth-interceptor">`basic-auth-interceptor`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L52-L61)
-<a name="babashka.http-client.interceptors/basic-auth-interceptor"></a>
+Request: adds `:accept` header. Only supported value is `:json`.
 
-## <a name="babashka.http-client.interceptors/decode-body-interceptor">`decode-body-interceptor`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L148-L158)
-<a name="babashka.http-client.interceptors/decode-body-interceptor"></a>
+## <a name="babashka.http-client.interceptors/basic-auth">`basic-auth`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L52-L61)
+<a name="babashka.http-client.interceptors/basic-auth"></a>
 
-## <a name="babashka.http-client.interceptors/decompress-body-interceptor">`decompress-body-interceptor`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L136-L141)
-<a name="babashka.http-client.interceptors/decompress-body-interceptor"></a>
+## <a name="babashka.http-client.interceptors/decode-body">`decode-body`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L152-L162)
+<a name="babashka.http-client.interceptors/decode-body"></a>
 
-## <a name="babashka.http-client.interceptors/default-interceptors">`default-interceptors`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L160-L166)
+Response: based on the value of `:as` in request, decodes as `:string`, `:stream` or `:bytes`. Defaults to `:string`.
+
+## <a name="babashka.http-client.interceptors/decompress-body">`decompress-body`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L139-L145)
+<a name="babashka.http-client.interceptors/decompress-body"></a>
+
+Response: decompresses body based on  "content-encoding" header. Valid values: `gzip` and `deflate`.
+
+## <a name="babashka.http-client.interceptors/default-interceptors">`default-interceptors`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L164-L170)
 <a name="babashka.http-client.interceptors/default-interceptors"></a>
 
-## <a name="babashka.http-client.interceptors/form-params-interceptor">`form-params-interceptor`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L83-L92)
-<a name="babashka.http-client.interceptors/form-params-interceptor"></a>
+## <a name="babashka.http-client.interceptors/form-params">`form-params`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L85-L95)
+<a name="babashka.http-client.interceptors/form-params"></a>
 
-## <a name="babashka.http-client.interceptors/insert-interceptors-after">`insert-interceptors-after`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L172-L174)
-<a name="babashka.http-client.interceptors/insert-interceptors-after"></a>
-``` clojure
+Request: encodes `:form-params` map and adds `:body`.
 
-(insert-interceptors-after chain after & interceptors)
-```
+## <a name="babashka.http-client.interceptors/query-params">`query-params`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L77-L83)
+<a name="babashka.http-client.interceptors/query-params"></a>
 
-
-## <a name="babashka.http-client.interceptors/insert-interceptors-before">`insert-interceptors-before`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L168-L170)
-<a name="babashka.http-client.interceptors/insert-interceptors-before"></a>
-``` clojure
-
-(insert-interceptors-before chain before & interceptors)
-```
-
-
-## <a name="babashka.http-client.interceptors/query-params-interceptor">`query-params-interceptor`</a> [:page_facing_up:](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L76-L81)
-<a name="babashka.http-client.interceptors/query-params-interceptor"></a>
+Request: encodes `:query-params` map and appends to `:uri`.

@@ -49,7 +49,7 @@
         basic-auth (str user ":" pass)]
     (str "Basic " (.encodeToString (Base64/getEncoder) (.getBytes basic-auth "UTF-8")))))
 
-(def basic-auth-interceptor
+(def basic-auth
   {:name ::basic-auth
    :request (fn [opts]
               (if-let [basic-auth (:basic-auth opts)]
@@ -60,7 +60,8 @@
                   opts)
                 opts))})
 
-(def accept-header-interceptor
+(def accept-header
+  "Request: adds `:accept` header. Only supported value is `:json`."
   {:name ::accept-header
    :request
    (fn [opts]
@@ -73,14 +74,16 @@
          opts)
        opts))})
 
-(def query-params-interceptor
+(def query-params
+  "Request: encodes `:query-params` map and appends to `:uri`."
   {:name ::query-params
    :request (fn [opts]
               (if-let [qp (:query-params opts)]
                 (assoc opts :uri (str (:uri opts) "?" (map->query-params qp)))
                 opts))})
 
-(def form-params-interceptor
+(def form-params
+  "Request: encodes `:form-params` map and adds `:body`."
   {:name ::form-params
    :request (fn [opts]
               (if-let [fp (:form-params opts)]
@@ -91,7 +94,7 @@
                     (assoc-in opts [:headers :content-type] "application/x-www-form-urlencoded")))
                 opts))})
 
-(defmulti ^:private decompress-body
+(defmulti ^:private do-decompress-body
   (fn [resp]
     (when-let [encoding (get-in resp [:headers "content-encoding"])]
       (str/lower-case encoding))))
@@ -103,7 +106,7 @@
     (when (instance? java.io.InputStream b)
       (GZIPInputStream. b))))
 
-(defmethod decompress-body "gzip"
+(defmethod do-decompress-body "gzip"
   [resp]
   (update resp :body gunzip))
 
@@ -126,26 +129,28 @@
 
       iis')))
 
-(defmethod decompress-body "deflate"
+(defmethod do-decompress-body "deflate"
   [resp]
   (update resp :body inflate))
 
-(defmethod decompress-body :default [resp]
+(defmethod do-decompress-body :default [resp]
   resp)
 
-(def decompress-body-interceptor
+(def decompress-body
+  "Response: decompresses body based on  \"content-encoding\" header. Valid values: `gzip` and `deflate`."
   {:name ::decompress
    :response (fn [resp]
                (if (false? (:decompress-body (:request resp)))
                  resp
-                 (decompress-body resp)))})
+                 (do-decompress-body resp)))})
 
 (defn- stream-bytes [is]
   (let [baos (java.io.ByteArrayOutputStream.)]
     (io/copy is baos)
     (.toByteArray baos)))
 
-(def decode-body-interceptor
+(def decode-body
+  "Response: based on the value of `:as` in request, decodes as `:string`, `:stream` or `:bytes`. Defaults to `:string`."
   {:name ::decode-body
    :response (fn [resp]
                (let [as (or (-> resp :request :as) :string)
@@ -153,22 +158,21 @@
                      body (case as
                             :string (slurp body)
                             :stream body
-                            :bytes (stream-bytes body)
-                            body)]
+                            :bytes (stream-bytes body))]
                  (assoc resp :body body)))})
 
 (def default-interceptors
-  [accept-header-interceptor
-   basic-auth-interceptor
-   query-params-interceptor
-   form-params-interceptor
-   decode-body-interceptor
-   decompress-body-interceptor])
+  [accept-header
+   basic-auth
+   query-params
+   form-params
+   decode-body
+   decompress-body])
 
-(defn insert-interceptors-before [chain before & interceptors]
+#_(defn insert-interceptors-before [chain before & interceptors]
   (let [[pre _ post] (partition-by #(= before %) chain)]
     (reduce into [] [pre (conj (vec interceptors) before) post])))
 
-(defn insert-interceptors-after [chain after & interceptors]
+#_(defn insert-interceptors-after [chain after & interceptors]
   (let [[pre _ post] (partition-by #(= after %) chain)]
     (reduce into [] [pre (list* after interceptors) post])))
