@@ -124,7 +124,7 @@ With `:as :stream`
 
 will return the raw input stream.
 
-### URL construction
+### URI construction
 
 Using the verbose `:uri` API for fine grained (and safer) URI construction:
 
