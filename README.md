@@ -132,10 +132,10 @@ Using the verbose `:uri` API for fine grained (and safer) URI construction:
 
 ``` clojure
 (-> (client/request {:uri {:scheme "https"
-                         :host   "httpbin.org"
-                         :port   443
-                         :path   "/get"
-                         :query  "q=test"}})
+                           :host   "httpbin.org"
+                           :port   443
+                           :path   "/get"
+                           :query  "q=test"}})
     :body
     (json/parse-string true))
 ;;=>
@@ -182,8 +182,9 @@ To opt out of an exception being thrown, set `:throw` to false.
 
 To accept gzipped or zipped responses, use:
 
-```
-(client/get "https://api.stackexchange.com/2.2/sites" {:headers {"Accept-Encoding" ["gzip" "deflate"]}})
+``` clojure
+(client/get "https://api.stackexchange.com/2.2/sites"
+  {:headers {"Accept-Encoding" ["gzip" "deflate"]}})
 ```
 
 The above server only serves compressed responses, so if you remove the header, the request will fail.
