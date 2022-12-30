@@ -188,22 +188,22 @@
   (let [server (java.net.ServerSocket. 1668)
         port (.getLocalPort server)]
     (future (try (with-open
-                  [socket (.accept server)
-                   out (io/writer (.getOutputStream socket))]
-                  (binding [*out* out]
-                    (println "HTTP/1.1 200 OK")
-                    (println "Content-Type: text/event-stream")
-                    (println "Connection: keep-alive")
-                    (println)
-                    (try (loop []
-                           (println "data: Stream Hello!")
-                           (Thread/sleep 20)
-                           (recur))
-                         (catch Exception _ nil))))
+                   [socket (.accept server)
+                    out (io/writer (.getOutputStream socket))]
+                   (binding [*out* out]
+                     (println "HTTP/1.1 200 OK")
+                     (println "Content-Type: text/event-stream")
+                     (println "Connection: keep-alive")
+                     (println)
+                     (try (loop []
+                            (println "data: Stream Hello!")
+                            (Thread/sleep 20)
+                            (recur))
+                          (catch Exception _ nil))))
                  (catch Exception e
                    (prn e))))
     (let [resp (client/get (str "http://localhost:" port)
-                         {:as :stream})
+                           {:as :stream})
           status (:status resp)
           headers (:headers resp)
           body (:body resp)]
@@ -212,45 +212,22 @@
       (is (= (repeat 2 "data: Stream Hello!") (take 2 (line-seq (io/reader body)))))
       (is (= (repeat 10 "data: Stream Hello!") (take 10 (line-seq (io/reader body))))))))
 
-;; (deftest command-test
-;;   (let [resp (client/head "https://postman-echo.com/head" {:debug true})
-;;         command (:command resp)
-;;         opts (:options resp)]
-;;     (is (pos? (.indexOf command "--head")))
-;;     (is (identical? :head (:method opts)))))
-
-;; (deftest stderr-test
-;;   (testing "should throw"
-;;     (let [ex (is (thrown? ExceptionInfo (client/get "blah://postman-echo.com/get")))
-;;           ex-data (ex-data ex)]
-;;       (is (contains? ex-data :err))
-;;       (is (str/starts-with? (:err ex-data) "curl: (1)"))
-;;       (is (= 1 (:exit ex-data)))))
-;;   (testing "should not throw"
-;;     (let [resp (client/get "blah://postman-echo.com/get" {:throw false})]
-;;       (is (contains? resp :err))
-;;       (is (str/starts-with? (:err resp) "curl: (1)"))
-;;       (is (= 1 (:exit resp))))))
-
-;; (deftest exceptional-status-test
-;;   (testing "should throw"
-;;     (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404")))
-;;           response (ex-data ex)]
-;;       (is (= 404 (:status response)))
-;;       (is (zero? (:exit response)))))
-;;   (testing "should throw when streaming based on status code"
-;;     (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404" {:throw true
-;;                                                                              :as :stream})))
-;;           response (ex-data ex)]
-;;       (is (= 404 (:status response)))
-;;       (is (= "404 Not Found" (slurp (:body response))))
-;;       (is (= "" (slurp (:err response))))
-;;       (is (delay? (:exit response)))
-;;       (is (zero? @(:exit response)))))
-;;   (testing "should not throw"
-;;     (let [response (client/get "https://httpstat.us/404" {:throw false})]
-;;       (is (= 404 (:status response)))
-;;       (is (zero? (:exit response))))))
+#_(deftest exceptional-status-test
+  (testing "should throw"
+    (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404")))
+          response (ex-data ex)]
+      (is (= 404 (:status response)))
+      (is (zero? (:exit response)))))
+  (testing "should throw when streaming based on status code"
+    (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404" {:throw true
+                                                                               :as :stream})))
+          response (ex-data ex)]
+      (is (= 404 (:status response)))
+      (is (= "404 Not Found" (slurp (:body response))))))
+  (testing "should not throw"
+    (let [response (client/get "https://httpstat.us/404" {:throw false})]
+      (is (= 404 (:status response)))
+      )))
 
 ;; (deftest compressed-test
 ;;   (is (-> (client/get "https://api.stackexchange.com/2.2/sites")
