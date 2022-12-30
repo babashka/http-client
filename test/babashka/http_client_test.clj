@@ -117,19 +117,19 @@
       (is (= 200 (:status response)))))
 
   (testing "response object without fully following redirects"
-      ;; (System/getProperty "jdk.httpclient.redirects.retrylimit" "0")
+    ;; (System/getProperty "jdk.httpclient.redirects.retrylimit" "0")
     (let [response (client/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org"
                                {:client (client/client {:follow-redirects :never})})]
-        (is (map? response))
-        (is (= 302 (:status response)))
-        (is (= "" (:body response)))
-        (is (= "https://www.httpbin.org" (get-in response [:headers "location"])))
-        (is (empty? (:redirects response))))))
+      (is (map? response))
+      (is (= 302 (:status response)))
+      (is (= "" (:body response)))
+      (is (= "https://www.httpbin.org" (get-in response [:headers "location"])))
+      (is (empty? (:redirects response))))))
 
 (deftest accept-header-test
   (is (= 200
          (-> (client/get "https://httpstat.us/200"
-                       {:accept :json})
+                         {:accept :json})
              :body
              (json/parse-string true)
              :code))))
@@ -179,46 +179,38 @@
 ;;                (.length (io/file "test" "icon.png"))
 ;;                (.length tmp-file)))))))
 
-;; (deftest stream-test
-;;   ;; This test aims to test what is tested manually as follows:
-;;   ;; - from https://github.com/enkot/SSE-Fake-Server: npm install sse-fake-server
-;;   ;; - start with: PORT=1668 node fakeserver.js
-;;   ;; - ./bb '(let [resp (client/get "http://localhost:1668/stream" {:as :stream}) body (:body resp) proc (:process resp)] (prn (take 1 (line-seq (io/reader body)))) (.destroy proc))'
-;;   ;; ("data: Stream Hello!")
-;;   (let [server (java.net.ServerSocket. 1668)
-;;         port (.getLocalPort server)]
-;;     (future (try (with-open
-;;                   [socket (.accept server)
-;;                    out (io/writer (.getOutputStream socket))]
-;;                   (binding [*out* out]
-;;                     (println "HTTP/1.1 200 OK")
-;;                     (println "Content-Type: text/event-stream")
-;;                     (println "Connection: keep-alive")
-;;                     (println)
-;;                     (try (loop []
-;;                            (println "data: Stream Hello!")
-;;                            (Thread/sleep 20)
-;;                            (recur))
-;;                          (catch Exception _ nil))))
-;;                  (catch Exception e
-;;                    (prn e))))
-;;     (let [resp (client/get (str "http://localhost:" port)
-;;                          {:as :stream})
-;;           status (:status resp)
-;;           headers (:headers resp)
-;;           body (:body resp)
-;;           proc (:process resp)]
-;;       (is (= 200 status))
-;;       (is (= "text/event-stream" (get headers "content-type")))
-;;       (is (= (repeat 2 "data: Stream Hello!") (take 2 (line-seq (io/reader body)))))
-;;       (is (= (repeat 10 "data: Stream Hello!") (take 10 (line-seq (io/reader body)))))
-;;       (.destroy proc)))
-;;   (testing "retries with stream"
-;;     (let [body (:body (client/get "https://httpstat.us/500"
-;;                                 {:as :stream :raw-args ["--retry" "3"]
-;;                                  :throw false}))]
-;;       (is (= "500 Internal Server Error500 Internal Server Error500 Internal Server Error500 Internal Server Error"
-;;              (slurp body))))))
+(deftest stream-test
+  ;; This test aims to test what is tested manually as follows:
+  ;; - from https://github.com/enkot/SSE-Fake-Server: npm install sse-fake-server
+  ;; - start with: PORT=1668 node fakeserver.js
+  ;; - ./bb '(let [resp (client/get "http://localhost:1668/stream" {:as :stream}) body (:body resp) proc (:process resp)] (prn (take 1 (line-seq (io/reader body)))) (.destroy proc))'
+  ;; ("data: Stream Hello!")
+  (let [server (java.net.ServerSocket. 1668)
+        port (.getLocalPort server)]
+    (future (try (with-open
+                  [socket (.accept server)
+                   out (io/writer (.getOutputStream socket))]
+                  (binding [*out* out]
+                    (println "HTTP/1.1 200 OK")
+                    (println "Content-Type: text/event-stream")
+                    (println "Connection: keep-alive")
+                    (println)
+                    (try (loop []
+                           (println "data: Stream Hello!")
+                           (Thread/sleep 20)
+                           (recur))
+                         (catch Exception _ nil))))
+                 (catch Exception e
+                   (prn e))))
+    (let [resp (client/get (str "http://localhost:" port)
+                         {:as :stream})
+          status (:status resp)
+          headers (:headers resp)
+          body (:body resp)]
+      (is (= 200 status))
+      (is (= "text/event-stream" (get headers "content-type")))
+      (is (= (repeat 2 "data: Stream Hello!") (take 2 (line-seq (io/reader body)))))
+      (is (= (repeat 10 "data: Stream Hello!") (take 10 (line-seq (io/reader body))))))))
 
 ;; (deftest command-test
 ;;   (let [resp (client/head "https://postman-echo.com/head" {:debug true})
