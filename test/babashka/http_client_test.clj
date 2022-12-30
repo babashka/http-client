@@ -26,11 +26,11 @@
                (json/parse-string true)
                :args)))))
 
-;; (deftest delete-test
-;;   (is (= 200 (:status (client/delete "https://postman-echo.com/delete")))))
+(deftest delete-test
+  (is (= 200 (:status (client/delete "https://postman-echo.com/delete")))))
 
-;; (deftest head-test
-;;   (is (= 200 (:status (client/head "https://postman-echo.com/head")))))
+(deftest head-test
+  (is (= 200 (:status (client/head "https://postman-echo.com/head")))))
 
 ;; (deftest post-test
 ;;   (is (subs (:body (client/post "https://postman-echo.com/post"))

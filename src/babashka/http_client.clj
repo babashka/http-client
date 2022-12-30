@@ -137,3 +137,15 @@
   ([uri opts]
    (let [opts (assoc opts :uri uri :method :get)]
      (request opts))))
+
+(defn delete
+  ([uri] (delete uri nil))
+  ([uri opts]
+   (let [opts (assoc opts :uri uri :method :delete)]
+     (request opts))))
+
+(defn head
+  ([uri] (head uri nil))
+  ([uri opts]
+   (let [opts (assoc opts :uri uri :method :head)]
+     (request opts))))
