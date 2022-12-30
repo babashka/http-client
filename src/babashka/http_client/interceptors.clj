@@ -31,7 +31,13 @@
          kvs (seq query-params-map)]
     (if kvs
       (let [[k v] (first kvs)]
-        (recur (conj! params* (str (url-encode (coerce-key k)) "=" (url-encode (str v)))) (next kvs)))
+        (if (and (coll? v)
+                 (seqable? v))
+          (recur params* (concat
+                          (map (fn [v]
+                                 [k v]) v)
+                          (rest kvs)))
+          (recur (conj! params* (str (url-encode (coerce-key k)) "=" (url-encode (str v)))) (next kvs))))
       (str/join "&" (persistent! params*)))))
 
 (defn- map->form-params [form-params-map]

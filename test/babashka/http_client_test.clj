@@ -25,6 +25,11 @@
            (-> (client/get "https://postman-echo.com/get" {:query-params {"foo1" "bar1" "foo2" "bar2" :foo3 "bar3" :not-string 42 :namespaced/key "foo"}})
                :body
                (json/parse-string true)
+               :args)))
+    (is (= {:foo1 ["bar1" "bar2"]}
+           (-> (client/get "https://postman-echo.com/get" {:query-params {"foo1" ["bar1" "bar2"]}})
+               :body
+               (json/parse-string true)
                :args)))))
 
 (deftest delete-test
