@@ -249,7 +249,7 @@ To execute request asynchronously, use `:async true`. The response will be a
 `CompletableFuture` with the response map.
 
 ``` clojure
-(-> (client/get "https://clojure.org" {:async true}) .get :status)
+(-> (client/get "https://clojure.org" {:async true}) deref :status)
 ;;=> 200
 ```
 
