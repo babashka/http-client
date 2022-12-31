@@ -1,4 +1,4 @@
-# Http-client
+# http-client
 
 An HTTP client for Clojure and Babashka built on `java.net.http`.
 
@@ -20,6 +20,14 @@ inspired by libraries like [clj-http](https://github.com/dakrone/clj-http).
 (require '[babashka.http-client :as client])
 (require '[clojure.java.io :as io]) ;; optional
 (require '[cheshire.core :as json]) ;; optional
+```
+
+## Installation
+
+Add this to your `bb.edn` or `deps.edn`:
+
+```edn
+{:deps {io.github.babashka/http-client {:git/sha "dcfa8a46d798b8a23406193745fea88f3f98311a"}}}
 ```
 
 ### GET
