@@ -76,7 +76,7 @@ A `POST` request with a `:body`:
 
 ``` clojure
 (def resp (client/post "https://postman-echo.com/post" {:body "From Clojure"}))
-(json/parse-string (:body resp)) ;;=> {"args" {}, "data" "", ...}
+(json/parse-string (:body resp)) ;;=> {"args" {}, "data" "From Clojure", ...}
 ```
 
 Posting a file as a `POST` body:
