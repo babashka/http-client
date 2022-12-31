@@ -14,6 +14,8 @@ will be built into babashka.
 
 ## Installation
 
+Use as a dependency in `deps.edn` or `bb.edn`:
+
 ``` clojure
 org.babashka/http-client {:mvn/version "0.0.1"}
 ```
