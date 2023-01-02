@@ -260,7 +260,7 @@ Two different timeouts can be set:
 - The connection timeout, `:connect-timeout`, in `http/client`
 - The request `:timeout` in `http/request`
 
-When you also need to wait for the bytes of a body to arrive within a fixed interval, you can use the following:
+Alternatively you can use `:async` + `deref` with a timeout + default value:
 
 ```
 (let [resp (http/get "https://httpstat.us/200?sleep=5000" {:async true})] (deref resp 1000 ::too-late))
