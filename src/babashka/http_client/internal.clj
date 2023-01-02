@@ -32,6 +32,11 @@
     :http1.1 HttpClient$Version/HTTP_1_1
     :http2   HttpClient$Version/HTTP_2))
 
+(defn ->timeout [t]
+  (if (integer? t)
+    (Duration/ofMillis t)
+    t))
+
 (defn client-builder
   (^HttpClient$Builder []
    (client-builder {}))
@@ -46,7 +51,7 @@
                  ssl-parameters
                  version]} opts]
      (cond-> (HttpClient/newBuilder)
-       ;; connect-timeout  (.connectTimeout (util/convert-timeout connect-timeout))
+       connect-timeout  (.connectTimeout (->timeout connect-timeout))
        cookie-handler   (.cookieHandler cookie-handler)
        executor         (.executor executor)
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
@@ -111,11 +116,6 @@
     (throw (ex-info (str "Don't know how to convert " (type body) "to body")
                     {:body body}))))
 
-(defn- convert-timeout [t]
-  (if (integer? t)
-    (Duration/ofMillis t)
-    t))
-
 (defn- url-encode
   "Returns an UTF-8 URL encoded version of the given string."
   [^String unencoded]
@@ -143,7 +143,7 @@
       (some? expect-continue) (.expectContinue expect-continue)
       (seq headers)            (.headers (into-array String (coerce-headers headers)))
       method                   (.method (method-keyword->str method) (->body-publisher body))
-      timeout                  (.timeout (convert-timeout timeout))
+      timeout                  (.timeout (->timeout timeout))
       uri                      (.uri (URI/create uri))
       version                  (.version (version-keyword->version-enum version)))))
 

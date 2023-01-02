@@ -13,6 +13,7 @@
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by `client`. If not provided a default client will be used.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
+  * `:timeout` - request timeout in milliseconds.
   "
   [opts]
   (i/request opts))
@@ -21,7 +22,8 @@
   "Construct a custom client.
 
   Options:
-  * `:follow-redirects`: `:never`, `:always` or `:normal`
+  * `:follow-redirects` - `:never`, `:always` or `:normal`
+  * `:connect-timeout` - connection timeout in milliseconds.
   "
   [opts]
   (i/client opts))
