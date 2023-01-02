@@ -27,7 +27,7 @@ The APIs in this library are mostly compatible with
 inspired by libraries like [clj-http](https://github.com/dakrone/clj-http).
 
 ``` clojure
-(require '[babashka.http-client :as client])
+(require '[babashka.http-client :as http])
 (require '[clojure.java.io :as io]) ;; optional
 (require '[cheshire.core :as json]) ;; optional
 ```
@@ -37,7 +37,7 @@ inspired by libraries like [clj-http](https://github.com/dakrone/clj-http).
 Simple `GET` request:
 
 ``` clojure
-(client/get "https://httpstat.us/200")
+(http/get "https://httpstat.us/200")
 ;;=> {:status 200, :body "200 OK", :headers { ... }}
 ```
 
@@ -46,7 +46,7 @@ Simple `GET` request:
 Passing headers:
 
 ``` clojure
-(def resp (client/get "https://httpstat.us/200" {:headers {"Accept" "application/json"}}))
+(def resp (http/get "https://httpstat.us/200" {:headers {"Accept" "application/json"}}))
 (json/parse-string (:body resp)) ;;=> {"code" 200, "description" "OK"}
 ```
 
@@ -56,7 +56,7 @@ Query parameters:
 
 ``` clojure
 (->
-  (client/get "https://postman-echo.com/get" {:query-params {"q" "clojure"}})
+  (http/get "https://postman-echo.com/get" {:query-params {"q" "clojure"}})
   :body
   (json/parse-string true)
   :args)
@@ -67,7 +67,7 @@ To send multiple params to the same key:
 ```clojure
 ;; https://postman-echo.com/get?q=clojure&q=curl
 
-(-> (client/get "https://postman-echo.com/get" {:query-params {:q ["clojure "curl"]}})
+(-> (http/get "https://postman-echo.com/get" {:query-params {:q ["clojure "curl"]}})
     :body (json/parse-string true) :args)
 ;;=> {:q ["clojure" "curl"]}
 ```
@@ -77,28 +77,28 @@ To send multiple params to the same key:
 A `POST` request with a `:body`:
 
 ``` clojure
-(def resp (client/post "https://postman-echo.com/post" {:body "From Clojure"}))
+(def resp (http/post "https://postman-echo.com/post" {:body "From Clojure"}))
 (json/parse-string (:body resp)) ;;=> {"args" {}, "data" "From Clojure", ...}
 ```
 
 Posting a file as a `POST` body:
 
 ``` clojure
-(:status (client/post "https://postman-echo.com/post" {:body (io/file "README.md")}))
+(:status (http/post "https://postman-echo.com/post" {:body (io/file "README.md")}))
 ;; => 200
 ```
 
 Posting a stream as a `POST` body:
 
 ``` clojure
-(:status (client/post "https://postman-echo.com/post" {:body (io/input-stream "README.md")}))
+(:status (http/post "https://postman-echo.com/post" {:body (io/input-stream "README.md")}))
 ;; => 200
 ```
 
 Posting form params:
 
 ``` clojure
-(:status (client/post "https://postman-echo.com/post" {:form-params {"name" "Michiel"}}))
+(:status (http/post "https://postman-echo.com/post" {:form-params {"name" "Michiel"}}))
 ;; => 200
 ```
 
@@ -107,7 +107,7 @@ Posting form params:
 Basic auth:
 
 ``` clojure
-(:body (client/get "https://postman-echo.com/basic-auth" {:basic-auth ["postman" "password"]}))
+(:body (http/get "https://postman-echo.com/basic-auth" {:basic-auth ["postman" "password"]}))
 ;; => "{\"authenticated\":true}"
 ```
 
@@ -116,7 +116,7 @@ Basic auth:
 With `:as :stream`:
 
 ``` clojure
-(:body (client/get "https://github.com/babashka/babashka/raw/master/logo/icon.png"
+(:body (http/get "https://github.com/babashka/babashka/raw/master/logo/icon.png"
     {:as :stream}))
 ```
 
@@ -128,7 +128,7 @@ Download a binary file:
 
 ``` clojure
 (io/copy
-  (:body (client/get "https://github.com/babashka/babashka/raw/master/logo/icon.png"
+  (:body (http/get "https://github.com/babashka/babashka/raw/master/logo/icon.png"
     {:as :stream}))
   (io/file "icon.png"))
 (.length (io/file "icon.png"))
@@ -142,7 +142,7 @@ To obtain an in-memory byte array you can use `:as :bytes`.
 Using the verbose `:uri` API for fine grained (and safer) URI construction:
 
 ``` clojure
-(-> (client/request {:uri {:scheme "https"
+(-> (http/request {:uri {:scheme "https"
                            :host   "httpbin.org"
                            :port   443
                            :path   "/get"
@@ -166,9 +166,9 @@ Using the verbose `:uri` API for fine grained (and safer) URI construction:
 The default client is configured to always follow redirects. To opt out of this behaviour, construct a custom client:
 
 ```clojure
-(:status (client/get "https://httpstat.us/302" {:client (client/client {:follow-redirects :never})}))
+(:status (http/get "https://httpstat.us/302" {:client (http/client {:follow-redirects :never})}))
 ;; => 302
-(:status (client/get "https://httpstat.us/302" {:client (client/client {:follow-redirects :always})}))
+(:status (http/get "https://httpstat.us/302" {:client (http/client {:follow-redirects :always})}))
 ;; => 200
 ```
 
@@ -177,7 +177,7 @@ The default client is configured to always follow redirects. To opt out of this 
 An `ExceptionInfo` will be thrown for all HTTP response status codes other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`.
 
 ```clojure
-user=> (client/get "https://httpstat.us/404")
+user=> (http/get "https://httpstat.us/404")
 Execution error (ExceptionInfo) at babashka.http-client.interceptors/fn (interceptors.clj:194).
 Exceptional status code: 404
  ```
@@ -185,7 +185,7 @@ Exceptional status code: 404
 To opt out of an exception being thrown, set `:throw` to false.
 
 ```clojure
-(:status (client/get "https://httpstat.us/404" {:throw false}))
+(:status (http/get "https://httpstat.us/404" {:throw false}))
 ;;=> 404
 ```
 
@@ -194,7 +194,7 @@ To opt out of an exception being thrown, set `:throw` to false.
 To accept gzipped or zipped responses, use:
 
 ``` clojure
-(client/get "https://api.stackexchange.com/2.2/sites"
+(http/get "https://api.stackexchange.com/2.2/sites"
   {:headers {"Accept-Encoding" ["gzip" "deflate"]}})
 ```
 
@@ -229,7 +229,7 @@ An example is shown in this test:
         interceptors (cons json-interceptor interceptors/default-interceptors)
         ]
     (testing "interceptors on request"
-      (let [resp (client/get "https://httpstat.us/200"
+      (let [resp (http/get "https://httpstat.us/200"
                              {:interceptors interceptors
                               :as :json})]
         (is (= 200 (-> resp :body
@@ -249,14 +249,29 @@ To execute request asynchronously, use `:async true`. The response will be a
 `CompletableFuture` with the response map.
 
 ``` clojure
-(-> (client/get "https://clojure.org" {:async true}) deref :status)
+(-> (http/get "https://clojure.org" {:async true}) deref :status)
 ;;=> 200
+```
+
+### Timeouts
+
+Two different timeouts can be set:
+
+- The connection timeout, `:connect-timeout`, in `http/client`
+- The request `:timeout` in `http/request`
+
+When you also need to wait for the bytes of a body to arrive within a fixed interval, you can use the following:
+
+```
+(let [resp (http/get "https://httpstat.us/200?sleep=5000" {:async true})] (deref resp 1000 ::too-late))
+;;=> :user/too-late
 ```
 
 ## Test
 
 ``` clojure
 $ bb test:clj
+$ bb test:bb
 ```
 
 ## Credits

@@ -1,5 +1,5 @@
 (ns babashka.http-client-test
-  (:require [babashka.http-client :as client]
+  (:require [babashka.http-client :as http]
             [babashka.http-client.interceptors :as interceptors]
             [cheshire.core :as json]
             [clojure.java.io :as io]
@@ -12,46 +12,46 @@
   (println))
 
 (deftest get-test
-  (is (str/includes? (:body (client/get "https://httpstat.us/200"))
+  (is (str/includes? (:body (http/get "https://httpstat.us/200"))
                      "200"))
   (is (= 200
-         (-> (client/get "https://httpstat.us/200"
+         (-> (http/get "https://httpstat.us/200"
                          {:headers {"Accept" "application/json"}})
              :body
              (json/parse-string true)
              :code)))
   (testing "query params"
     (is (= {:foo1 "bar1" :foo2 "bar2" :foo3 "bar3" :not-string "42" :namespaced/key "foo"}
-           (-> (client/get "https://postman-echo.com/get" {:query-params {"foo1" "bar1" "foo2" "bar2" :foo3 "bar3" :not-string 42 :namespaced/key "foo"}})
+           (-> (http/get "https://postman-echo.com/get" {:query-params {"foo1" "bar1" "foo2" "bar2" :foo3 "bar3" :not-string 42 :namespaced/key "foo"}})
                :body
                (json/parse-string true)
                :args)))
     (is (= {:foo1 ["bar1" "bar2"]}
-           (-> (client/get "https://postman-echo.com/get" {:query-params {"foo1" ["bar1" "bar2"]}})
+           (-> (http/get "https://postman-echo.com/get" {:query-params {"foo1" ["bar1" "bar2"]}})
                :body
                (json/parse-string true)
                :args)))))
 
 (deftest delete-test
-  (is (= 200 (:status (client/delete "https://postman-echo.com/delete")))))
+  (is (= 200 (:status (http/delete "https://postman-echo.com/delete")))))
 
 (deftest head-test
-  (is (= 200 (:status (client/head "https://postman-echo.com/head")))))
+  (is (= 200 (:status (http/head "https://postman-echo.com/head")))))
 
 (deftest post-test
-  (is (subs (:body (client/post "https://postman-echo.com/post"))
+  (is (subs (:body (http/post "https://postman-echo.com/post"))
             0 10))
   (is (str/includes?
-       (:body (client/post "https://postman-echo.com/post"
+       (:body (http/post "https://postman-echo.com/post"
                            {:body "From Clojure"}))
        "From Clojure"))
   (testing "file body"
     (is (str/includes?
-         (:body (client/post "https://postman-echo.com/post"
+         (:body (http/post "https://postman-echo.com/post"
                              {:body (io/file "README.md")}))
          "babashka")))
   (testing "JSON body"
-    (let [response (client/post "https://postman-echo.com/post"
+    (let [response (http/post "https://postman-echo.com/post"
                                 {:headers {"Content-Type" "application/json"}
                                  :body (json/generate-string {:a "foo"})})
           body (:body response)
@@ -60,11 +60,11 @@
       (is (= {:a "foo"} json))))
   (testing "stream body"
     (is (str/includes?
-         (:body (client/post "https://postman-echo.com/post"
+         (:body (http/post "https://postman-echo.com/post"
                              {:body (io/input-stream "README.md")}))
          "babashka")))
   (testing "form-params"
-    (let [body (:body (client/post "https://postman-echo.com/post"
+    (let [body (:body (http/post "https://postman-echo.com/post"
                                    {:form-params {"name" "Michiel Borkent"
                                                   :location "NL"
                                                   :this-isnt-a-string 42}}))
@@ -93,39 +93,39 @@
 
 (deftest patch-test
   (is (str/includes?
-       (:body (client/patch "https://postman-echo.com/patch"
+       (:body (http/patch "https://postman-echo.com/patch"
                             {:body "hello"}))
        "hello")))
 
 (deftest basic-auth-test
   (is (re-find #"authenticated.*true"
                (:body
-                (client/get "https://postman-echo.com/basic-auth"
+                (http/get "https://postman-echo.com/basic-auth"
                             {:basic-auth ["postman" "password"]})))))
 
 (deftest get-response-object-test
-  (let [response (client/get "https://httpstat.us/200")]
+  (let [response (http/get "https://httpstat.us/200")]
     (is (map? response))
     (is (= 200 (:status response)))
     (is (= "200 OK" (:body response)))
     (is (string? (get-in response [:headers "server"]))))
 
   (testing "response object as stream"
-    (let [response (client/get "https://httpstat.us/200" {:as :stream})]
+    (let [response (http/get "https://httpstat.us/200" {:as :stream})]
       (is (map? response))
       (is (= 200 (:status response)))
       (is (instance? java.io.InputStream (:body response)))
       (is (= "200 OK" (slurp (:body response))))))
 
   (testing "response object with following redirect"
-    (let [response (client/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org")]
+    (let [response (http/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org")]
       (is (map? response))
       (is (= 200 (:status response)))))
 
   (testing "response object without fully following redirects"
     ;; (System/getProperty "jdk.httpclient.redirects.retrylimit" "0")
-    (let [response (client/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org"
-                               {:client (client/client {:follow-redirects :never})})]
+    (let [response (http/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org"
+                               {:client (http/client {:follow-redirects :never})})]
       (is (map? response))
       (is (= 302 (:status response)))
       (is (= "" (:body response)))
@@ -134,7 +134,7 @@
 
 (deftest accept-header-test
   (is (= 200
-         (-> (client/get "https://httpstat.us/200"
+         (-> (http/get "https://httpstat.us/200"
                          {:accept :json})
              :body
              (json/parse-string true)
@@ -142,7 +142,7 @@
 
 (deftest url-encode-query-params-test
   (is (= {"my query param?" "hello there"}
-         (-> (client/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"}})
+         (-> (http/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"}})
              :body
              (json/parse-string)
              (get "args")))))
@@ -208,7 +208,7 @@
                           (catch Exception _ nil))))
                  (catch Exception e
                    (prn e))))
-    (let [resp (client/get (str "http://localhost:" port)
+    (let [resp (http/get (str "http://localhost:" port)
                            {:as :stream})
           status (:status resp)
           headers (:headers resp)
@@ -220,27 +220,27 @@
 
 (deftest exceptional-status-test
     (testing "should throw"
-      (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404")))
+      (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404")))
             response (ex-data ex)]
         (is (= 404 (:status response)))))
     (testing "should throw when streaming based on status code"
-      (let [ex (is (thrown? ExceptionInfo (client/get "https://httpstat.us/404" {:throw true
+      (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404" {:throw true
                                                                                  :as :stream})))
             response (ex-data ex)]
         (is (= 404 (:status response)))
         (is (= "404 Not Found" (slurp (:body response))))))
     (testing "should not throw"
-      (let [response (client/get "https://httpstat.us/404" {:throw false})]
+      (let [response (http/get "https://httpstat.us/404" {:throw false})]
         (is (= 404 (:status response))))))
 
 (deftest compressed-test
-  (let [resp (client/get "https://api.stackexchange.com/2.2/sites"
+  (let [resp (http/get "https://api.stackexchange.com/2.2/sites"
                          {:headers {"Accept-Encoding" ["gzip" "deflate"]}})]
     (is (-> resp :body (json/parse-string true) :items))))
 
 (deftest header-with-keyword-key-test
   (is (= 200
-         (-> (client/get "https://httpstat.us/200"
+         (-> (http/get "https://httpstat.us/200"
                          {:headers {:accept "application/json"}})
              :body
              (json/parse-string true)
@@ -248,10 +248,10 @@
 
 (deftest follow-redirects-test
   (testing "default behaviour of following redirects automatically"
-    (is (= 200 (:status (client/get "https://httpstat.us/302")))))
+    (is (= 200 (:status (http/get "https://httpstat.us/302")))))
 
   (testing "follow redirects set to false"
-    (is (= 302 (:status (client/get "https://httpstat.us/302" {:client (client/client {:follow-redirects false})}))))))
+    (is (= 302 (:status (http/get "https://httpstat.us/302" {:client (http/client {:follow-redirects false})}))))))
 
 (deftest interceptor-test
   (let [json-interceptor
@@ -275,7 +275,7 @@
         interceptors (cons json-interceptor interceptors/default-interceptors)
         ]
     (testing "interceptors on request"
-      (let [resp (client/get "https://httpstat.us/200"
+      (let [resp (http/get "https://httpstat.us/200"
                              {:interceptors interceptors
                               :as :json})]
         (is (= 200 (-> resp :body
