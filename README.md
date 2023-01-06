@@ -20,6 +20,30 @@ Use as a dependency in `deps.edn` or `bb.edn`:
 org.babashka/http-client {:mvn/version "0.0.1"}
 ```
 
+## Rationale
+
+Babashka has several built-in options for making HTTP requests, including:
+
+- [babashka.curl](https://github.com/babashka/babashka.curl)
+- [http-kit](https://github.com/http-kit/http-kit)
+- [java.net.http](https://docs.oracle.com/en/java/javase/17/docs/api/java.net.http/java/net/http/package-summary.html)
+
+In addition, it allows to use several libraries to be used as a dependency:
+
+- [java-http-clj](https://github.com/schmee/java-http-clj)
+- [hato](https://github.com/gnarroway/hato)
+- [clj-http-lite](https://github.com/clj-commons/clj-http-lite)
+
+The built-in clients come with their own trade-offs. E.g. babashka.curl shells
+out to `curl` which on Windows requires your local `curl` to be
+updated. Http-kit buffers the entire response in memory. Using `java.net.http`
+directly can be a bit verbose.
+
+Babashka's http-client aims to be a good default for most scripting use cases
+and is built on top of `java.net.http` and can be used as a dependency-free JVM
+library as well. It will be the recommended HTTP client in babashka. The other
+built-in solutions will not be removed any time soon.
+
 ## Usage
 
 The APIs in this library are mostly compatible with
