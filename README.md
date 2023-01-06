@@ -41,9 +41,9 @@ directly can be a bit verbose.
 
 Babashka's http-client aims to be a good default for most scripting use cases
 and is built on top of `java.net.http` and can be used as a dependency-free JVM
-library as well. It will be the recommended HTTP client in babashka. The API is
-mostly compatible with babashka.curl so it can be used as a drop-in
-replacement. The other built-in solutions will not be removed any time soon.
+library as well. The API is mostly compatible with babashka.curl so it can be
+used as a drop-in replacement. The other built-in solutions will not be removed
+any time soon.
 
 ## Usage
 
