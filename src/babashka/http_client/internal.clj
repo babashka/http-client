@@ -197,3 +197,8 @@
                       resp))
                   resp (reverse (or (:interceptors req)
                                     interceptors/default-interceptors)))))))
+
+(defn merge-opts
+  [opts-1 opts-2]
+  (let [merged-headers (into (:headers opts-1) (:headers opts-2))]
+    (assoc opts-2 :headers merged-headers)))

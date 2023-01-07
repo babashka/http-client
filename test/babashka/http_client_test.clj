@@ -209,7 +209,7 @@
                  (catch Exception e
                    (prn e))))
     (let [resp (http/get (str "http://localhost:" port)
-                           {:as :stream})
+                         {:as :stream})
           status (:status resp)
           headers (:headers resp)
           body (:body resp)]
@@ -272,8 +272,8 @@
                        response))}
         ;; Add json interceptor add beginning of chain
         ;; It will be the first to see the request and the last to see the response
-        interceptors (cons json-interceptor interceptors/default-interceptors)
-        ]
+        interceptors (cons json-interceptor interceptors/default-interceptors)]
+
     (testing "interceptors on request"
       (let [resp (http/get "https://httpstat.us/200"
                              {:interceptors interceptors
@@ -281,3 +281,48 @@
         (is (= 200 (-> resp :body
                        ;; response as JSON
                        :code)))))))
+
+(deftest default-headers-test
+  (testing "default headers with default client"
+    (let [body (-> (http/get "http://httpbin.org/get")
+                   :body
+                   (json/parse-string true))]
+      (is (= "*/*"
+             (-> body
+                 :headers
+                 :Accept)))
+      (is (= "gzip,deflate"
+             (-> body
+                 :headers
+                 :Accept-Encoding)))))
+  (testing "override default headers with default client"
+    (let [body (-> (http/get "http://httpbin.org/get"
+                             {:headers {"Accept"          "application/edn"
+                                        "Accept-Encoding" "foo"}})
+                   :body
+                   (json/parse-string true))]
+      (is (= "application/edn"
+             (-> body
+                 :headers
+                 :Accept)))
+      (is (= "foo"
+             (-> body
+                 :headers
+                 :Accept-Encoding)))))
+  (testing "merge with default headers with default client"
+    (let [body (-> (http/get "http://httpbin.org/get"
+                             {:headers {"foo" "bar"}})
+                   :body
+                   (json/parse-string true))]
+      (is (= "*/*"
+             (-> body
+                 :headers
+                 :Accept)))
+      (is (= "gzip,deflate"
+             (-> body
+                 :headers
+                 :Accept-Encoding)))
+      (is (= "bar"
+             (-> body
+                 :headers
+                 :Foo))))))

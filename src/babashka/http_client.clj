@@ -7,6 +7,12 @@
   []
   (i/client {:follow-redirects :always}))
 
+(defn default-opts
+  "Get the default request options map, intended for customization"
+  []
+  {:headers {"Accept"          "*/*"
+             "Accept-Encoding" ["gzip" "deflate"]}})
+
 (defn request
   "Perform request. Returns map with at least `:body`, `:status`
 
@@ -24,7 +30,8 @@
   [opts]
   (let [opts (if-not (contains? opts :client)
                (assoc opts :client (default-client))
-               opts)]
+               opts)
+        opts (i/merge-opts (default-opts) opts)]
     (i/request opts)))
 
 (defn client

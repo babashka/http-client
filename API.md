@@ -2,6 +2,7 @@
 -  [`babashka.http-client`](#babashka.http-client) 
     -  [`client`](#babashka.http-client/client) - Construct a custom client.
     -  [`default-client`](#babashka.http-client/default-client) - Get the default client, intended for customization.
+    -  [`default-opts`](#babashka.http-client/default-opts) - Get the default request options map, intended for customization.
     -  [`delete`](#babashka.http-client/delete) - Convenience wrapper for <code>request</code> with method <code>:delete</code>.
     -  [`get`](#babashka.http-client/get) - Convenience wrapper for <code>request</code> with method <code>:get</code>.
     -  [`head`](#babashka.http-client/head) - Convenience wrapper for <code>request</code> with method <code>:head</code>.
@@ -28,7 +29,7 @@
 
 
 
-## <a name="babashka.http-client/client">`client`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L30-L38)
+## <a name="babashka.http-client/client">`client`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L37-L45)
 <a name="babashka.http-client/client"></a>
 ``` clojure
 
@@ -53,7 +54,17 @@ Construct a custom client.
 
 Get the default client, intended for customization
 
-## <a name="babashka.http-client/delete">`delete`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L47-L52)
+## <a name="babashka.http-client/default-opts">`default-opts`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L10-L14)
+<a name="babashka.http-client/default-opts"></a>
+``` clojure
+
+(default-opts)
+```
+
+
+Get the default request options map, intended for customization
+
+## <a name="babashka.http-client/delete">`delete`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L54-L59)
 <a name="babashka.http-client/delete"></a>
 ``` clojure
 
@@ -64,7 +75,7 @@ Get the default client, intended for customization
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:delete`
 
-## <a name="babashka.http-client/get">`get`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L40-L45)
+## <a name="babashka.http-client/get">`get`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L47-L52)
 <a name="babashka.http-client/get"></a>
 ``` clojure
 
@@ -75,7 +86,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:get`
 
-## <a name="babashka.http-client/head">`head`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L54-L59)
+## <a name="babashka.http-client/head">`head`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L61-L66)
 <a name="babashka.http-client/head"></a>
 ``` clojure
 
@@ -86,7 +97,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:head`
 
-## <a name="babashka.http-client/patch">`patch`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L68-L75)
+## <a name="babashka.http-client/patch">`patch`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L75-L82)
 <a name="babashka.http-client/patch"></a>
 ``` clojure
 
@@ -97,7 +108,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:patch`
 
-## <a name="babashka.http-client/post">`post`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L61-L66)
+## <a name="babashka.http-client/post">`post`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L68-L73)
 <a name="babashka.http-client/post"></a>
 ``` clojure
 
@@ -108,7 +119,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:post`
 
-## <a name="babashka.http-client/request">`request`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L10-L28)
+## <a name="babashka.http-client/request">`request`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L16-L35)
 <a name="babashka.http-client/request"></a>
 ``` clojure
 
