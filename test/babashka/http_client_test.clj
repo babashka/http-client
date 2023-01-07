@@ -238,6 +238,23 @@
                          {:headers {"Accept-Encoding" ["gzip" "deflate"]}})]
     (is (-> resp :body (json/parse-string true) :items))))
 
+(deftest default-client-test
+  (let [resp (http/get "https://postman-echo.com/get")
+        headers (-> resp :body (json/parse-string true) :headers)]
+    (is (= "*/*" (:accept headers)))
+    (is (= "gzip, deflate" (:accept-encoding headers)))))
+
+(deftest client-request-opts-test
+  (let [client (http/client {:request {:headers {"x-my-header" "yolo"}}})
+        resp (http/get "https://postman-echo.com/get"
+                       {:client client})
+        header (-> resp :body (json/parse-string true) :headers :x-my-header)]
+    (is (= "yolo" header))
+    (let [resp (http/get "https://postman-echo.com/get"
+                         {:client client :headers {"x-my-header" "dude"}})
+          header (-> resp :body (json/parse-string true) :headers :x-my-header)]
+      (is (= "dude" header)))))
+
 (deftest header-with-keyword-key-test
   (is (= 200
          (-> (http/get "https://httpstat.us/200"

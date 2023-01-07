@@ -62,15 +62,18 @@
        version          (.version (version-keyword->version-enum version))))))
 
 (defn client
-  (^HttpClient [] (.build (client-builder)))
-  (^HttpClient [opts]
-   (if (map? opts)
-     (.build (client-builder opts))
-     (.build ^HttpClient$Builder opts))))
+  ([opts]
+   {:client (.build (client-builder opts))
+    :request (:request opts)
+    :type :babashka.http-client/client}))
+
+(def default-client-opts
+  {:follow-redirects :always
+   :request {:headers {:accept "*/*"
+                       :accept-encoding ["gzip" "deflate"]}}})
 
 (def ^HttpClient default-client
-  (delay (client {:follow-redirects :always
-                  })))
+  (delay (client default-client-opts)))
 
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
@@ -182,11 +185,19 @@
                     (f args))))
     (f x)))
 
+(defn merge-opts [x y]
+  (if (and (map? x) (map? y))
+    (merge x y)
+    y))
+
 (defn request
   [{:keys [client raw] :as req}]
-  (let [^HttpClient client (or client @default-client)
+  (let [client (or client @default-client)
+        request-defaults (:request client)
+        ^HttpClient client (or (:client client) client)
         request-interceptors (or (:interceptors req)
                                  interceptors/default-interceptors)
+        req (merge-with merge-opts request-defaults req)
         req (apply-interceptors req request-interceptors :request)
         req' (ring->HttpRequest req)
         resp (if (:async req)
