@@ -2,6 +2,11 @@
   (:refer-clojure :exclude [send get])
   (:require [babashka.http-client.internal :as i]))
 
+(defn default-client
+  "Get the default client, intended for customization"
+  []
+  (i/client {:follow-redirects :always}))
+
 (defn request
   "Perform request. Returns map with at least `:body`, `:status`
 
@@ -17,7 +22,10 @@
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
   "
   [opts]
-  (i/request opts))
+  (let [opts (if-not (contains? opts :client)
+               (assoc opts :client (default-client))
+               opts)]
+    (i/request opts)))
 
 (defn client
   "Construct a custom client.

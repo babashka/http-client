@@ -68,10 +68,6 @@
      (.build (client-builder opts))
      (.build ^HttpClient$Builder opts))))
 
-(def ^HttpClient default-client
-  (delay (client {:follow-redirects :always
-                  })))
-
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
 
@@ -174,18 +170,17 @@
                   (.map (.headers resp)))})
 
 (defn then [x f]
-  (if (instance? java.util.concurrent.CompletableFuture x)
-    (.thenApply ^java.util.concurrent.CompletableFuture x
-                ^java.util.function.Function
-                (reify java.util.function.Function
+  (if (instance? CompletableFuture x)
+    (.thenApply ^CompletableFuture x
+                ^Function
+                (reify Function
                   (apply [_ args]
                     (f args))))
     (f x)))
 
 (defn request
   [{:keys [client raw] :as req}]
-  (let [^HttpClient client (or client @default-client)
-        request-interceptors (or (:interceptors req)
+  (let [request-interceptors (or (:interceptors req)
                                  interceptors/default-interceptors)
         req (apply-interceptors req request-interceptors :request)
         req' (ring->HttpRequest req)
