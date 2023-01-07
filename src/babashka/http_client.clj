@@ -12,7 +12,7 @@
   Options:
   * `:follow-redirects` - `:never`, `:always` or `:normal`
   * `:connect-timeout` - connection timeout in milliseconds.
-  * `:request-defaults` - default request options which will be used in requests made with this client.
+  * `:request` - default request options which will be used in requests made with this client.
 
   Returns map with:
 
