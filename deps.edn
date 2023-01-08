@@ -1,7 +1,7 @@
 {:deps {}
  :aliases
  {:neil {:project {:name org.babashka/http-client
-                   :version "0.0.1"}}
+                   :version "0.0.2"}}
   :test ;; added by neil
   {:extra-paths ["test"]
    :extra-deps {io.github.cognitect-labs/test-runner
