@@ -12,7 +12,7 @@ This library is in flux. Feedback is welcome. It can be used in production, but
 expect breaking changes. When this library is considered stable (API-wise) it
 will be built into babashka.
 
-> NOTE: The `babashka.http-client` library is built-in as of babashka version 1.1.117.
+> NOTE: The `babashka.http-client` library is built-in as of babashka version 1.1.171.
 
 ## Installation
 
