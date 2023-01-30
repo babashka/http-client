@@ -1,11 +1,14 @@
 (ns babashka.http-client-test
-  (:require [babashka.http-client :as http]
-            [babashka.http-client.interceptors :as interceptors]
-            [cheshire.core :as json]
+  (:require [cheshire.core :as json]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.test :refer [deftest is testing]])
   (:import (clojure.lang ExceptionInfo)))
+
+;; reload client so we're not testing the built-in namespace in bb
+
+(require '[babashka.http-client.interceptors :as interceptors] :reload
+         '[babashka.http-client :as http] :reload)
 
 (defmethod clojure.test/report :begin-test-var [m]
   (println "===" (-> m :var meta :name))
