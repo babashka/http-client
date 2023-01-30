@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- [#13](https://github.com/babashka/http-client/issues/13): Add a default user-agent header: `babashka.http-client/<released-version>` ([@lispyclouds](https://github.com/lispyclouds))
+
 ## 0.0.3
 
 - [#12](https://github.com/babashka/http-client/issues/12): Do not uncompress (empty) body of `:head` request
