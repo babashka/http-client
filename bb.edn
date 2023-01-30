@@ -1,9 +1,11 @@
 {:tasks
  {test:clj (apply clojure "-M:test" *command-line-args*)
+
   test:bb {:extra-paths ["src" "test"]
            :extra-deps {io.github.cognitect-labs/test-runner
                         {:git/tag "v0.5.0" :git/sha "b3fd0d2"}}
            :task cognitect.test-runner/-main}
+
   quickdoc {:doc "Invoke quickdoc"
             :extra-deps {io.github.borkdude/quickdoc {:git/sha "1e810ddd08ee724ff5736530a35a989d0ecdc9de"}}
             :task (exec 'quickdoc.api/quickdoc)
@@ -11,4 +13,16 @@
                         :github/repo "https://github.com/babashka/http-client"
                         :source-paths ["src/babashka/http_client.clj"
                                        "src/babashka/http_client/interceptors.clj"]}}
-  publish (clojure "-T:build deploy")}}
+  refresh-version {:requires ([babashka.fs :as fs]
+                              [clojure.string :as str])
+                   :task (let [version (-> (slurp "deps.edn")
+                                           clojure.edn/read-string
+                                           :aliases :neil :project :version)]
+                           (fs/update-file "src/babashka/http_client/internal/version.clj"
+                                           (fn [contents]
+                                             (str/replace contents (re-pattern "#_:version(.*)")
+                                                          (fn [[_ match]]
+                                                            (str "#_:version " (pr-str version)))))))}
+
+  publish {:depends [refresh-version]
+           :task (clojure "-T:build deploy")}}}
