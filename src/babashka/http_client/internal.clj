@@ -70,7 +70,8 @@
 (def default-client-opts
   {:follow-redirects :always
    :request {:headers {:accept "*/*"
-                       :accept-encoding ["gzip" "deflate"]}}})
+                       :accept-encoding ["gzip" "deflate"]
+                       :user-agent "babashka.http-client/0.0.3"}}})
 
 (def ^HttpClient default-client
   (delay (client default-client-opts)))

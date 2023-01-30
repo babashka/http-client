@@ -215,7 +215,7 @@
                  (catch Exception e
                    (prn e))))
     (let [resp (http/get (str "http://localhost:" port)
-                           {:as :stream})
+                         {:as :stream})
           status (:status resp)
           headers (:headers resp)
           body (:body resp)]
@@ -248,7 +248,8 @@
   (let [resp (http/get "https://postman-echo.com/get")
         headers (-> resp :body (json/parse-string true) :headers)]
     (is (= "*/*" (:accept headers)))
-    (is (= "gzip, deflate" (:accept-encoding headers)))))
+    (is (= "gzip, deflate" (:accept-encoding headers)))
+    (is (= "babashka.http-client/0.0.3" (:user-agent headers)))))
 
 (deftest client-request-opts-test
   (let [client (http/client {:request {:headers {"x-my-header" "yolo"}}})
@@ -295,8 +296,8 @@
                        response))}
         ;; Add json interceptor add beginning of chain
         ;; It will be the first to see the request and the last to see the response
-        interceptors (cons json-interceptor interceptors/default-interceptors)
-        ]
+        interceptors (cons json-interceptor interceptors/default-interceptors)]
+
     (testing "interceptors on request"
       (let [resp (http/get "https://httpstat.us/200"
                              {:interceptors interceptors
