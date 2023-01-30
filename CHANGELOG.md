@@ -2,7 +2,9 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.0.3
+
+- [#12](https://github.com/babashka/http-client/issues/12): Do not uncompress (empty) body of `:head` request
 
 ## 0.0.2
 

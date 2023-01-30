@@ -148,7 +148,8 @@
   "Response: decompresses body based on  \"content-encoding\" header. Valid values: `gzip` and `deflate`."
   {:name ::decompress
    :response (fn [resp]
-               (if (false? (:decompress-body (:request resp)))
+               (if (or (false? (:decompress-body (:request resp)))
+                       (= :head (-> resp :request :method)))
                  resp
                  (do-decompress-body resp)))})
 

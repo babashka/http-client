@@ -36,7 +36,10 @@
   (is (= 200 (:status (http/delete "https://postman-echo.com/delete")))))
 
 (deftest head-test
-  (is (= 200 (:status (http/head "https://postman-echo.com/head")))))
+  (is (= 200 (:status (http/head "https://postman-echo.com/head"))))
+  ;; github apparently sets encoding despite HEAD request, which returns empty
+  ;; body and then causes GZIP error
+  (is (= 200 (:status (http/head "https://github.com/babashka/http-client")))))
 
 (deftest post-test
   (is (subs (:body (http/post "https://postman-echo.com/post"))
