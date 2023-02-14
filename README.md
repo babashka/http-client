@@ -19,7 +19,7 @@ will be built into babashka.
 Use as a dependency in `deps.edn` or `bb.edn`:
 
 ``` clojure
-org.babashka/http-client {:mvn/version "0.0.3"}
+org.babashka/http-client {:mvn/version "0.1.4"}
 ```
 
 ## Rationale
