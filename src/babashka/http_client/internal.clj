@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [send get])
   (:require
    [babashka.http-client.interceptors :as interceptors]
+   [babashka.http-client.internal.version :as iv]
    [clojure.string :as str])
   (:import
    [java.net URI URLEncoder]
@@ -70,7 +71,8 @@
 (def default-client-opts
   {:follow-redirects :always
    :request {:headers {:accept "*/*"
-                       :accept-encoding ["gzip" "deflate"]}}})
+                       :accept-encoding ["gzip" "deflate"]
+                       :user-agent (str "babashka.http-client/" iv/version)}}})
 
 (def ^HttpClient default-client
   (delay (client default-client-opts)))

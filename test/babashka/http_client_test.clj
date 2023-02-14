@@ -1,9 +1,12 @@
 (ns babashka.http-client-test
-  (:require [cheshire.core :as json]
-            [clojure.java.io :as io]
-            [clojure.string :as str]
-            [clojure.test :refer [deftest is testing]])
-  (:import (clojure.lang ExceptionInfo)))
+  (:require
+   [babashka.http-client.internal.version :as iv]
+   [cheshire.core :as json]
+   [clojure.java.io :as io]
+   [clojure.string :as str]
+   [clojure.test :refer [deftest is testing]])
+  (:import
+   (clojure.lang ExceptionInfo)))
 
 ;; reload client so we're not testing the built-in namespace in bb
 
@@ -248,7 +251,8 @@
   (let [resp (http/get "https://postman-echo.com/get")
         headers (-> resp :body (json/parse-string true) :headers)]
     (is (= "*/*" (:accept headers)))
-    (is (= "gzip, deflate" (:accept-encoding headers)))))
+    (is (= "gzip, deflate" (:accept-encoding headers)))
+    (is (= (str "babashka.http-client/" iv/version) (:user-agent headers)))))
 
 (deftest client-request-opts-test
   (let [client (http/client {:request {:headers {"x-my-header" "yolo"}}})
