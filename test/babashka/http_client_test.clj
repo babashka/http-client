@@ -19,7 +19,7 @@
                      "200"))
   (is (= 200
          (-> (http/get "https://httpstat.us/200"
-                         {:headers {"Accept" "application/json"}})
+                       {:headers {"Accept" "application/json"}})
              :body
              (json/parse-string true)
              :code)))
@@ -49,17 +49,17 @@
             0 10))
   (is (str/includes?
        (:body (http/post "https://postman-echo.com/post"
-                           {:body "From Clojure"}))
+                         {:body "From Clojure"}))
        "From Clojure"))
   (testing "file body"
     (is (str/includes?
          (:body (http/post "https://postman-echo.com/post"
-                             {:body (io/file "README.md")}))
+                           {:body (io/file "README.md")}))
          "babashka")))
   (testing "JSON body"
     (let [response (http/post "https://postman-echo.com/post"
-                                {:headers {"Content-Type" "application/json"}
-                                 :body (json/generate-string {:a "foo"})})
+                              {:headers {"Content-Type" "application/json"}
+                               :body (json/generate-string {:a "foo"})})
           body (:body response)
           body (json/parse-string body true)
           json (:json body)]
@@ -67,13 +67,13 @@
   (testing "stream body"
     (is (str/includes?
          (:body (http/post "https://postman-echo.com/post"
-                             {:body (io/input-stream "README.md")}))
+                           {:body (io/input-stream "README.md")}))
          "babashka")))
   (testing "form-params"
     (let [body (:body (http/post "https://postman-echo.com/post"
-                                   {:form-params {"name" "Michiel Borkent"
-                                                  :location "NL"
-                                                  :this-isnt-a-string 42}}))
+                                 {:form-params {"name" "Michiel Borkent"
+                                                :location "NL"
+                                                :this-isnt-a-string 42}}))
           body (json/parse-string body true)
           headers (:headers body)
           content-type (:content-type headers)]
@@ -100,14 +100,14 @@
 (deftest patch-test
   (is (str/includes?
        (:body (http/patch "https://postman-echo.com/patch"
-                            {:body "hello"}))
+                          {:body "hello"}))
        "hello")))
 
 (deftest basic-auth-test
   (is (re-find #"authenticated.*true"
                (:body
                 (http/get "https://postman-echo.com/basic-auth"
-                            {:basic-auth ["postman" "password"]})))))
+                          {:basic-auth ["postman" "password"]})))))
 
 (deftest get-response-object-test
   (let [response (http/get "https://httpstat.us/200")]
@@ -131,7 +131,7 @@
   (testing "response object without fully following redirects"
     ;; (System/getProperty "jdk.httpclient.redirects.retrylimit" "0")
     (let [response (http/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org"
-                               {:client (http/client {:follow-redirects :never})})]
+                             {:client (http/client {:follow-redirects :never})})]
       (is (map? response))
       (is (= 302 (:status response)))
       (is (= "" (:body response)))
@@ -141,7 +141,7 @@
 (deftest accept-header-test
   (is (= 200
          (-> (http/get "https://httpstat.us/200"
-                         {:accept :json})
+                       {:accept :json})
              :body
              (json/parse-string true)
              :code))))
@@ -200,8 +200,8 @@
   (let [server (java.net.ServerSocket. 1668)
         port (.getLocalPort server)]
     (future (try (with-open
-                   [socket (.accept server)
-                    out (io/writer (.getOutputStream socket))]
+                  [socket (.accept server)
+                   out (io/writer (.getOutputStream socket))]
                    (binding [*out* out]
                      (println "HTTP/1.1 200 OK")
                      (println "Content-Type: text/event-stream")
@@ -215,7 +215,7 @@
                  (catch Exception e
                    (prn e))))
     (let [resp (http/get (str "http://localhost:" port)
-                           {:as :stream})
+                         {:as :stream})
           status (:status resp)
           headers (:headers resp)
           body (:body resp)]
@@ -225,23 +225,23 @@
       (is (= (repeat 10 "data: Stream Hello!") (take 10 (line-seq (io/reader body))))))))
 
 (deftest exceptional-status-test
-    (testing "should throw"
-      (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404")))
-            response (ex-data ex)]
-        (is (= 404 (:status response)))))
-    (testing "should throw when streaming based on status code"
-      (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404" {:throw true
-                                                                                 :as :stream})))
-            response (ex-data ex)]
-        (is (= 404 (:status response)))
-        (is (= "404 Not Found" (slurp (:body response))))))
-    (testing "should not throw"
-      (let [response (http/get "https://httpstat.us/404" {:throw false})]
-        (is (= 404 (:status response))))))
+  (testing "should throw"
+    (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404")))
+          response (ex-data ex)]
+      (is (= 404 (:status response)))))
+  (testing "should throw when streaming based on status code"
+    (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404" {:throw true
+                                                                             :as :stream})))
+          response (ex-data ex)]
+      (is (= 404 (:status response)))
+      (is (= "404 Not Found" (slurp (:body response))))))
+  (testing "should not throw"
+    (let [response (http/get "https://httpstat.us/404" {:throw false})]
+      (is (= 404 (:status response))))))
 
 (deftest compressed-test
   (let [resp (http/get "https://api.stackexchange.com/2.2/sites"
-                         {:headers {"Accept-Encoding" ["gzip" "deflate"]}})]
+                       {:headers {"Accept-Encoding" ["gzip" "deflate"]}})]
     (is (-> resp :body (json/parse-string true) :items))))
 
 (deftest default-client-test
@@ -264,7 +264,7 @@
 (deftest header-with-keyword-key-test
   (is (= 200
          (-> (http/get "https://httpstat.us/200"
-                         {:headers {:accept "application/json"}})
+                       {:headers {:accept "application/json"}})
              :body
              (json/parse-string true)
              :code))))
@@ -295,12 +295,27 @@
                        response))}
         ;; Add json interceptor add beginning of chain
         ;; It will be the first to see the request and the last to see the response
-        interceptors (cons json-interceptor interceptors/default-interceptors)
-        ]
+        interceptors (cons json-interceptor interceptors/default-interceptors)]
     (testing "interceptors on request"
       (let [resp (http/get "https://httpstat.us/200"
-                             {:interceptors interceptors
-                              :as :json})]
+                           {:interceptors interceptors
+                            :as :json})]
         (is (= 200 (-> resp :body
                        ;; response as JSON
                        :code)))))))
+
+(deftest multipart-test
+  (let [uuid (.toString (random-uuid))
+        _ (spit (doto (io/file ".test-data")
+                  (.deleteOnExit)) uuid)
+        resp (http/post "https://postman-echo.com/post"
+                        {:multipart [{:name "title" :content "My Awesome Picture"}
+                                     {:name "Content/type" :content "image/jpeg"}
+                                     {:name "foo.txt" :part-name "eggplant" :content "Eggplants"}
+                                     {:name "file" :content (io/file ".test-data") :file-name "dude"}]})
+        resp-body (:body resp)
+        resp-body (json/parse-string resp-body true)
+        headers (:headers resp-body)]
+    (is (str/starts-with? (:content-type headers) "multipart/form-data; boundary=babashka_http_client_Boundary"))
+    (is (some? (:dude (:files resp-body))))
+    (is (= "My Awesome Picture" (-> resp-body :form :title)))))

@@ -2,7 +2,8 @@
   (:refer-clojure :exclude [send get])
   (:require
    [clojure.java.io :as io]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [babashka.http-client.internal.multipart :as multipart])
   (:import
    [java.net URLEncoder]
    [java.util Base64]
@@ -200,6 +201,18 @@
                    resp
                    (throw (ex-info (str "Exceptional status code: " status) resp)))))})
 
+(def multipart
+  "Adds appropriate body and header if making a multipart request."
+  {:name ::multipart
+   :request (fn [{:keys [multipart] :as req}]
+              (if multipart
+                (let [b (multipart/boundary)]
+                  (-> req
+                      (dissoc :multipart)
+                      (assoc :body (multipart/body multipart b))
+                      (update :headers assoc "content-type" (str "multipart/form-data; boundary=" b))))
+                req))})
+
 (def default-interceptors
   "Default interceptor chain. Interceptors are called in order for request and in reverse order for response."
   [throw-on-exceptional-status-code
@@ -208,6 +221,7 @@
    basic-auth
    query-params
    form-params
+   multipart
    decode-body
    decompress-body])
 
