@@ -2,8 +2,9 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.1.4
 
+- Implement `:multipart` uploads, largely based on [hato](https://github.com/gnarroway/hato)'s implementation
 - [#13](https://github.com/babashka/http-client/issues/13): Add a default user-agent header: `babashka.http-client/<released-version>` ([@lispyclouds](https://github.com/lispyclouds))
 
 ## 0.0.3
