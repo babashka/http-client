@@ -216,6 +216,25 @@ To opt out of an exception being thrown, set `:throw` to false.
 ;;=> 404
 ```
 
+### Multipart
+
+To perform a multipart request, supply `:multipart` with a sequence of maps with the following options:
+
+- `:name`: The name of the param
+- `:part-name`: Override for `:name`
+- `:content`: The part's data. May be string or something that can be fed into `clojure.java.io/input-stream`
+- `:file-name`: The part's file name. If the `:content` is a file, the name of the file will be used, unless `:file-name` is set.
+- `:content-type`: The part's content type. By default, if `:content` is a string it will be `text/plain; charset=UTF-8`; if `:content` is a file it will attempt to guess the best content type or fallback to `application/octet-stream`.
+
+An example request:
+
+``` clojure
+(http/post "https://postman-echo.com/post"
+           {:multipart [{:name "title" :content "My Title"}
+                        {:name "Content/type" :content "image/jpeg"}
+                        {:name "file" :content (io/file "foo.jpg") :file-name "foobar.jpg"}]})
+```
+
 ### Compression
 
 To accept gzipped or zipped responses, use:
