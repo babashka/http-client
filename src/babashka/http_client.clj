@@ -1,6 +1,7 @@
 (ns babashka.http-client
   (:refer-clojure :exclude [send get])
-  (:require [babashka.http-client.internal :as i]))
+  (:require [babashka.http-client.internal :as i]
+            [babashka.http-client.internal.websocket :as w]))
 
 (def default-client-opts
   "Options used to create the (implicit) default client."
