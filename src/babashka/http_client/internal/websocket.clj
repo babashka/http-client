@@ -86,6 +86,7 @@
            subprotocols
            async]
     :as opts}]
+  (def o opts)
   (let [^HttpClient http-client client
         ^WebSocket$Listener listener (request->WebSocketListener opts)]
     (cond-> (.newWebSocketBuilder http-client)
@@ -95,22 +96,24 @@
       true               (.buildAsync (URI/create (ics/uri->str uri)) listener)
       (not async)        deref)))
 
+(defn ->buffer ^java.nio.ByteBuffer [x]
+  (if (bytes? x)
+    (java.nio.ByteBuffer/wrap ^bytes x)
+    x))
+
 (defn send!
   ([^WebSocket ws data]
    (send! ws data nil))
   ([^WebSocket ws data {:keys [last] :or {last true}}]
    (cond (instance? CharSequence data)
          (.sendText ws ^CharSequence data last)
-         (instance? java.nio.ByteBuffer data)
-         (.sendText ws ^java.nio.ByteBuffer data last)
-         (bytes? data)
-         (.sendText ws ^java.nio.ByteBuffer (java.nio.ByteBuffer/wrap ^bytes data) last)
-         :else (throw (ex-info "Don't know how to send data" {:data data})))))
+         :else
+         (.sendBinary ws ^java.nio.ByteBuffer (->buffer data) last))))
 
 (defn ^CompletableFuture ping!
   "Sends a Ping message with bytes from the given buffer."
-  [^WebSocket ws ^ByteBuffer data]
-  (.sendPing ws data))
+  [^WebSocket ws data]
+  (.sendPing ws (->buffer data)))
 
 (defn ^CompletableFuture pong!
   "Sends a Pong message with bytes from the given buffer."

@@ -15,9 +15,9 @@
   * `:subprotocols` - sets a request for the given subprotocols.
   * `:async` - return `CompleteableFuture` of websocket"
   [{:keys [client]
-    :or {client @i/default-client}
     :as opts}]
-  (w/websocket (assoc opts :client client)))
+  (let [client (or client (:client @i/default-client))]
+    (w/websocket (assoc opts :client client))))
 
 (defn send!
   "Sends a message to the WebSocket.
