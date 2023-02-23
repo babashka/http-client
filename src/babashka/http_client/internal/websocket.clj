@@ -2,7 +2,7 @@
   "Code is very much based on hato's websocket code. Credits to @gnarroway!"
   {:no-doc true}
   (:require
-   [babashka.http-client.internal.aux :as aux])
+   [babashka.http-client.internal.helpers :as aux])
   (:import
    [java.net URI]
    [java.net.http

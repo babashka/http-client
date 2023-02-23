@@ -2,7 +2,7 @@
   (:refer-clojure :exclude [send get])
   (:require
    [babashka.http-client.internal.multipart :as multipart]
-   [babashka.http-client.internal.aux :as aux]
+   [babashka.http-client.internal.helpers :as aux]
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import

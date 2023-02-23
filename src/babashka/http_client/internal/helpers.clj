@@ -1,4 +1,4 @@
-(ns babashka.http-client.internal.aux
+(ns babashka.http-client.internal.helpers
   {:no-doc true})
 
 (defn ->uri [uri]

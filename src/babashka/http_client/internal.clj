@@ -5,7 +5,7 @@
    [babashka.http-client.interceptors :as interceptors]
    [babashka.http-client.internal.version :as iv]
    [clojure.string :as str]
-   [babashka.http-client.internal.aux :as aux])
+   [babashka.http-client.internal.helpers :as aux])
   (:import
    [java.net URI URLEncoder]
    [java.net.http
