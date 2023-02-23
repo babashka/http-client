@@ -1,4 +1,5 @@
 (ns babashka.http-client.internal
+  {:no-doc true}
   (:refer-clojure :exclude [send get])
   (:require
    [babashka.http-client.interceptors :as interceptors]
@@ -17,8 +18,7 @@
     HttpResponse
     HttpResponse$BodyHandlers]
    [java.time Duration]
-   [java.util.concurrent CompletableFuture]
-   [java.util.function Function Supplier]))
+   [java.util.function Supplier]))
 
 (set! *warn-on-reflection* true)
 

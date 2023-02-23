@@ -2,6 +2,7 @@
   (:refer-clojure :exclude [send get])
   (:require
    [babashka.http-client.internal.multipart :as multipart]
+   [babashka.http-client.internal.aux :as aux]
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
@@ -171,24 +172,12 @@
                             :bytes (stream-bytes body))]
                  (assoc resp :body body)))})
 
-(defn uri->str [uri]
-  (cond (string? uri) uri
-        (map? uri)
-        (str (java.net.URI. ^String (:scheme uri)
-                            ^String (:user uri)
-                            ^String (:host uri)
-                            ^Integer (:port uri)
-                            ^String (:path uri)
-                            ^String (:query uri)
-                            ^String (:fragment uri)))
-        :else uri))
-
 (def construct-uri
   "Request: construct uri from map"
   {:name ::construct-uri
    :request (fn [req]
               (let [uri (:uri req)
-                    uri (uri->str uri)]
+                    uri (aux/->uri uri)]
                 (assoc req :uri uri)))})
 
 (def unexceptional-statuses

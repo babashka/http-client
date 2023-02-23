@@ -1,7 +1,8 @@
 (ns babashka.http-client.internal.websocket
   "Largely based on hato code."
+  {:no-doc true}
   (:require
-   [babashka.http-client.interceptors :as ics])
+   [babashka.http-client.internal.aux :as aux])
   (:import
    [java.net URI]
    [java.net.http
@@ -92,7 +93,7 @@
       connect-timeout (.connectTimeout (Duration/ofMillis connect-timeout))
       (seq subprotocols) (.subprotocols (first subprotocols) (into-array String (rest subprotocols)))
       headers (with-headers headers)
-      true (.buildAsync (URI/create (ics/uri->str uri)) listener)
+      true (.buildAsync (URI/create (aux/->uri uri)) listener)
       (not async) deref)))
 
 (defn ->buffer ^java.nio.ByteBuffer [x]

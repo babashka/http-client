@@ -1,5 +1,6 @@
 (ns babashka.http-client.internal.multipart
   "Multipart implementation largely inspired by hato"
+  {:no-doc true}
   (:refer-clojure :exclude [get])
   (:require [clojure.java.io :as io])
   (:import [java.io InputStream File]
