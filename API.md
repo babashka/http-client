@@ -20,7 +20,7 @@
     -  [`query-params`](#babashka.http-client.interceptors/query-params) - Request: encodes <code>:query-params</code> map and appends to <code>:uri</code>.
     -  [`throw-on-exceptional-status-code`](#babashka.http-client.interceptors/throw-on-exceptional-status-code) - Response: throw on exceptional status codes.
     -  [`unexceptional-statuses`](#babashka.http-client.interceptors/unexceptional-statuses)
--  [`babashka.http-client.websocket`](#babashka.http-client.websocket) 
+-  [`babashka.http-client.websocket`](#babashka.http-client.websocket)  - Code is very much based on hato's websocket code.
     -  [`abort!`](#babashka.http-client.websocket/abort!) - Closes this WebSocket's input and output abruptly.
     -  [`close!`](#babashka.http-client.websocket/close!) - Initiates an orderly closure of this WebSocket's output by sending a Close message with the given status code and the reason.
     -  [`ping!`](#babashka.http-client.websocket/ping!) - Sends a Ping message with bytes from the given buffer.
@@ -236,6 +236,7 @@ Response: throw on exceptional status codes
 # <a name="babashka.http-client.websocket">babashka.http-client.websocket</a>
 
 
+Code is very much based on hato's websocket code. Credits to @gnarroway!
 
 
 
@@ -247,7 +248,7 @@ Response: throw on exceptional status codes
 ```
 
 Closes this WebSocket's input and output abruptly.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L51-L54">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L61-L64">Source</a></sub></p>
 
 ## <a name="babashka.http-client.websocket/close!">`close!`</a><a name="babashka.http-client.websocket/close!"></a>
 ``` clojure
@@ -258,7 +259,7 @@ Closes this WebSocket's input and output abruptly.
 
 Initiates an orderly closure of this WebSocket's output by sending a
   Close message with the given status code and the reason.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L43-L49">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L53-L59">Source</a></sub></p>
 
 ## <a name="babashka.http-client.websocket/ping!">`ping!`</a><a name="babashka.http-client.websocket/ping!"></a>
 ``` clojure
@@ -267,7 +268,7 @@ Initiates an orderly closure of this WebSocket's output by sending a
 ```
 
 Sends a Ping message with bytes from the given buffer.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L33-L36">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L43-L46">Source</a></sub></p>
 
 ## <a name="babashka.http-client.websocket/pong!">`pong!`</a><a name="babashka.http-client.websocket/pong!"></a>
 ``` clojure
@@ -276,7 +277,7 @@ Sends a Ping message with bytes from the given buffer.
 ```
 
 Sends a Pong message with bytes from the given buffer.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L38-L41">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L48-L51">Source</a></sub></p>
 
 ## <a name="babashka.http-client.websocket/send!">`send!`</a><a name="babashka.http-client.websocket/send!"></a>
 ``` clojure
@@ -290,7 +291,7 @@ Sends a message to the WebSocket.
 
   Options:
   * `:last`: this is the last message, defaults to `true`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L22-L31">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L32-L41">Source</a></sub></p>
 
 ## <a name="babashka.http-client.websocket/websocket">`websocket`</a><a name="babashka.http-client.websocket/websocket"></a>
 ``` clojure
@@ -306,4 +307,12 @@ Builds `java.net.http.Websocket` client.
   * `:connect-timeout` Sets a timeout for establishing a WebSocket connection (in millis).
   * `:subprotocols` - sets a request for the given subprotocols.
   * `:async` - return `CompleteableFuture` of websocket
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L8-L20">Source</a></sub></p>
+
+  Callbacks options:
+  * `:on-open` - `[ws]`, called when a `WebSocket` has been connected.
+  * `:on-message` - `[ws data last]` A textual/binary data has been received.
+  * `:on-ping` - `[ws data]` A Ping message has been received.
+  * `:on-pong` - `[ws data]` A Pong message has been received.
+  * `:on-close` - `[ws status reason]` Receives a Close message indicating the WebSocket's input has been closed.
+  * `:on-error` - `[ws err]` An error has occurred.
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L10-L30">Source</a></sub></p>

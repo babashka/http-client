@@ -1,5 +1,5 @@
 (ns babashka.http-client.internal.websocket
-  "Largely based on hato code."
+  "Code is very much based on hato's websocket code. Credits to @gnarroway!"
   {:no-doc true}
   (:require
    [babashka.http-client.internal.aux :as aux])
@@ -16,16 +16,6 @@
    [java.util.function Function]))
 
 (defn request->WebSocketListener
-  "Constructs a new WebSocket listener to receive events for a given WebSocket connection.
-
-  Takes a map of:
-
-  - `:on-open`    Called when a `WebSocket` has been connected. Called with the WebSocket instance.
-  - `:on-message` A textual/binary data has been received. Called with the WebSocket instance, the data, and whether this invocation completes the message.
-  - `:on-ping`    A Ping message has been received. Called with the WebSocket instance and the ping message.
-  - `:on-pong`    A Pong message has been received. Called with the WebSocket instance and the pong message.
-  - `:on-close`   Receives a Close message indicating the WebSocket's input has been closed. Called with the WebSocket instance, the status code, and the reason.
-  - `:on-error`   An error has occurred. Called with the WebSocket instance and the error."
   [{:keys [on-open
            on-message
            on-ping
@@ -111,25 +101,20 @@
          :else
          (.sendBinary ws ^java.nio.ByteBuffer (->buffer data) last))))
 
-(defn ^CompletableFuture ping!
-  "Sends a Ping message with bytes from the given buffer."
+(defn ping!
   [^WebSocket ws data]
   (.sendPing ws (->buffer data)))
 
-(defn ^CompletableFuture pong!
-  "Sends a Pong message with bytes from the given buffer."
+(defn pong!
   [^WebSocket ws ^ByteBuffer data]
   (.sendPong ws (->buffer data)))
 
-(defn ^CompletableFuture close!
-  "Initiates an orderly closure of this WebSocket's output by sending a
-  Close message with the given status code and the reason."
+(defn close!
   ([^WebSocket ws]
    (close! ws WebSocket/NORMAL_CLOSURE ""))
   ([^WebSocket ws status-code ^String reason]
    (.sendClose ws status-code reason)))
 
 (defn abort!
-  "Closes this WebSocket's input and output abruptly."
   [^WebSocket ws]
   (.abort ws))
