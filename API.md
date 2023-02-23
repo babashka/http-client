@@ -20,6 +20,13 @@
     -  [`query-params`](#babashka.http-client.interceptors/query-params) - Request: encodes <code>:query-params</code> map and appends to <code>:uri</code>.
     -  [`throw-on-exceptional-status-code`](#babashka.http-client.interceptors/throw-on-exceptional-status-code) - Response: throw on exceptional status codes.
     -  [`unexceptional-statuses`](#babashka.http-client.interceptors/unexceptional-statuses)
+-  [`babashka.http-client.websocket`](#babashka.http-client.websocket) 
+    -  [`abort!`](#babashka.http-client.websocket/abort!) - Closes this WebSocket's input and output abruptly.
+    -  [`close!`](#babashka.http-client.websocket/close!) - Initiates an orderly closure of this WebSocket's output by sending a Close message with the given status code and the reason.
+    -  [`ping!`](#babashka.http-client.websocket/ping!) - Sends a Ping message with bytes from the given buffer.
+    -  [`pong!`](#babashka.http-client.websocket/pong!) - Sends a Pong message with bytes from the given buffer.
+    -  [`send!`](#babashka.http-client.websocket/send!) - Sends a message to the WebSocket.
+    -  [`websocket`](#babashka.http-client.websocket/websocket) - Builds <code>java.net.http.Websocket</code> client.
 
 -----
 # <a name="babashka.http-client">babashka.http-client</a>
@@ -195,3 +202,85 @@ Response: throw on exceptional status codes
 
 ## <a name="babashka.http-client.interceptors/unexceptional-statuses">`unexceptional-statuses`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L183-L184)
 <a name="babashka.http-client.interceptors/unexceptional-statuses"></a>
+
+-----
+# <a name="babashka.http-client.websocket">babashka.http-client.websocket</a>
+
+
+
+
+
+
+## <a name="babashka.http-client.websocket/abort!">`abort!`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L51-L54)
+<a name="babashka.http-client.websocket/abort!"></a>
+``` clojure
+
+(abort! ws)
+```
+
+
+Closes this WebSocket's input and output abruptly.
+
+## <a name="babashka.http-client.websocket/close!">`close!`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L43-L49)
+<a name="babashka.http-client.websocket/close!"></a>
+``` clojure
+
+(close! ws)
+(close! ws status-code reason)
+```
+
+
+Initiates an orderly closure of this WebSocket's output by sending a
+  Close message with the given status code and the reason.
+
+## <a name="babashka.http-client.websocket/ping!">`ping!`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L33-L36)
+<a name="babashka.http-client.websocket/ping!"></a>
+``` clojure
+
+(ping! ws data)
+```
+
+
+Sends a Ping message with bytes from the given buffer.
+
+## <a name="babashka.http-client.websocket/pong!">`pong!`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L38-L41)
+<a name="babashka.http-client.websocket/pong!"></a>
+``` clojure
+
+(pong! ws data)
+```
+
+
+Sends a Pong message with bytes from the given buffer.
+
+## <a name="babashka.http-client.websocket/send!">`send!`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L22-L31)
+<a name="babashka.http-client.websocket/send!"></a>
+``` clojure
+
+(send! ws data)
+(send! ws data opts)
+```
+
+
+Sends a message to the WebSocket.
+  `data` can be a CharSequence (e.g. string), byte array or ByteBuffer
+
+  Options:
+  * `:last`: this is the last message, defaults to `true`
+
+## <a name="babashka.http-client.websocket/websocket">`websocket`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/websocket.clj#L8-L20)
+<a name="babashka.http-client.websocket/websocket"></a>
+``` clojure
+
+(websocket {:keys [client], :as opts})
+```
+
+
+Builds `java.net.http.Websocket` client.
+  * `:uri` - the uri to request (required).
+     May be a string or map of `:schema` (required), `:host` (required), `:port`, `:path` and `:query`
+  * `:headers` - a map of headers for the initial handshake`
+  * `:client` - a client as produced by `client`. If not provided a default client will be used.
+  * `:connect-timeout` Sets a timeout for establishing a WebSocket connection (in millis).
+  * `:subprotocols` - sets a request for the given subprotocols.
+  * `:async` - return `CompleteableFuture` of websocket

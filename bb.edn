@@ -12,7 +12,8 @@
             :exec-args {:git/branch "main"
                         :github/repo "https://github.com/babashka/http-client"
                         :source-paths ["src/babashka/http_client.clj"
-                                       "src/babashka/http_client/interceptors.clj"]}}
+                                       "src/babashka/http_client/interceptors.clj"
+                                       "src/babashka/http_client/websocket.clj"]}}
   refresh-version {:requires ([babashka.fs :as fs]
                               [clojure.string :as str])
                    :task (let [version (-> (slurp "deps.edn")
