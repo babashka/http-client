@@ -15,7 +15,7 @@ jobs:
     steps:
       - name: Configure git
         run: |
-          git config core.protectNTFS false
+          git config --global core.protectNTFS false
 
       - name: Checkout
         uses: actions/checkout@v3
