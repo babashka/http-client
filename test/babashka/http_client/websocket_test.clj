@@ -33,10 +33,11 @@
         ws (ws/websocket {:uri (str "ws://localhost:" port)
                           :headers {:foo "bar"}
                           :on-pong (fn [_ch data]
-                                     (swap! pongs conj data))})]
+                                     (swap! pongs conj data)
+                                     (swap! actions inc))})]
     (ws/send! ws "hello")
     (ws/ping! ws "yolo")
-    (while (not= @actions 2))
+    (while (not= @actions 3))
     (is (= ["hello"] @received))
     (is (= 1 (count @pongs)))
     (srv/server-stop! srv)))
