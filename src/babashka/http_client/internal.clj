@@ -4,7 +4,8 @@
   (:require
    [babashka.http-client.interceptors :as interceptors]
    [babashka.http-client.internal.version :as iv]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [babashka.http-client.internal.aux :as aux])
   (:import
    [java.net URI URLEncoder]
    [java.net.http
@@ -80,22 +81,6 @@
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
 
-(defn- coerce-key
-  "Coerces a key to str"
-  [k]
-  (if (keyword? k)
-    (-> k str (subs 1))
-    (str k)))
-
-(defn ^:private coerce-headers
-  [headers]
-  (mapcat
-   (fn [[k v]]
-     (if (sequential? v)
-       (interleave (repeat (coerce-key k)) v)
-       [(coerce-key k) v]))
-   headers))
-
 (defn- input-stream-supplier [s]
   (reify Supplier
     (get [_this] s)))
@@ -132,7 +117,7 @@
     (if kvs
       (let [[k v] (first kvs)
             v (url-encode (str v))
-            param (str (url-encode (coerce-key k)) "=" v)]
+            param (str (url-encode (aux/coerce-key k)) "=" v)]
         (recur (conj! params* param) (next kvs)))
       (str/join "&" (persistent! params*)))))
 
@@ -146,7 +131,7 @@
                 body]} opts]
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
-      (seq headers)            (.headers (into-array String (coerce-headers headers)))
+      (seq headers)            (.headers (into-array String (aux/coerce-headers headers)))
       method                   (.method (method-keyword->str method) (->body-publisher body))
       timeout                  (.timeout (->timeout timeout))
       uri                      (.uri (URI/create uri))

@@ -15,6 +15,8 @@
    [java.util.concurrent CompletableFuture]
    [java.util.function Function]))
 
+(set! *warn-on-reflection* true)
+
 (defn request->WebSocketListener
   [{:keys [on-open
            on-message
@@ -63,11 +65,10 @@
 
 (defn- with-headers
   ^WebSocket$Builder [builder headers]
-  (reduce-kv
-   (fn [^WebSocket$Builder b ^String hk ^String hv]
-     (.header b hk hv))
-   builder
-   headers))
+  (reduce (fn [^WebSocket$Builder builder [k v]]
+            (.header builder (aux/coerce-key k) v))
+          builder
+          headers))
 
 (defn websocket
   [{:keys [uri

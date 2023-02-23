@@ -12,3 +12,19 @@
                             ^String (:query uri)
                             ^String (:fragment uri)))
         :else uri))
+
+(defn coerce-key
+  "Coerces a key to str"
+  [k]
+  (if (keyword? k)
+    (-> k str (subs 1))
+    (str k)))
+
+(defn coerce-headers
+  [headers]
+  (mapcat
+   (fn [[k v]]
+     (if (sequential? v)
+       (interleave (repeat (coerce-key k)) v)
+       [(coerce-key k) v]))
+   headers))

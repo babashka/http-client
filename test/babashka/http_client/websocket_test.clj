@@ -14,8 +14,10 @@
                        :on-open on-open
                        :on-ping on-ping}))))
 
+(def port (atom 1446))
+
 (deftest websocket-test
-  (let [port 1345
+  (let [port (swap! port inc)
         pings (atom [])
         received (atom [])
         pongs (atom [])
@@ -29,6 +31,7 @@
                             {:port port
                              :legacy-return-value? false})
         ws (ws/websocket {:uri (str "ws://localhost:" port)
+                          :headers {:foo "bar"}
                           :on-pong (fn [_ch data]
                                      (swap! pongs conj data))})]
     (ws/send! ws "hello")
