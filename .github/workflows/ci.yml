@@ -8,15 +8,11 @@ jobs:
 
     strategy:
       matrix:
-        os: [windows-latest]
+        os: [ubuntu-latest]
 
     runs-on: ${{ matrix.os }}
 
     steps:
-      - name: Configure git
-        run: |
-          git config --global core.protectNTFS false
-
       - name: Checkout
         uses: actions/checkout@v3
 
