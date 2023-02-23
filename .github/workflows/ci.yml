@@ -13,6 +13,10 @@ jobs:
     runs-on: ${{ matrix.os }}
 
     steps:
+      - name: Configure git
+        run: |
+          git config core.protectNTFS false
+
       - name: Checkout
         uses: actions/checkout@v3
 
