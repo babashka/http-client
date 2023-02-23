@@ -7,6 +7,7 @@
     -  [`head`](#babashka.http-client/head) - Convenience wrapper for <code>request</code> with method <code>:head</code>.
     -  [`patch`](#babashka.http-client/patch) - Convenience wrapper for <code>request</code> with method <code>:patch</code>.
     -  [`post`](#babashka.http-client/post) - Convenience wrapper for <code>request</code> with method <code>:post</code>.
+    -  [`put`](#babashka.http-client/put) - Convenience wrapper for <code>request</code> with method <code>:put</code>.
     -  [`request`](#babashka.http-client/request) - Perform request.
 -  [`babashka.http-client.interceptors`](#babashka.http-client.interceptors) 
     -  [`accept-header`](#babashka.http-client.interceptors/accept-header) - Request: adds <code>:accept</code> header.
@@ -115,6 +116,16 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:post`
 <p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L66-L71">Source</a></sub></p>
 
+## <a name="babashka.http-client/put">`put`</a><a name="babashka.http-client/put"></a>
+``` clojure
+
+(put url)
+(put url opts)
+```
+
+Convenience wrapper for [`request`](#babashka.http-client/request) with method `:put`
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L82-L89">Source</a></sub></p>
+
 ## <a name="babashka.http-client/request">`request`</a><a name="babashka.http-client/request"></a>
 ``` clojure
 
@@ -128,7 +139,7 @@ Perform request. Returns map with at least `:body`, `:status`
   * `:uri` - the uri to request (required).
      May be a string or map of `:schema` (required), `:host` (required), `:port`, `:path` and `:query`
   * `:headers` - a map of headers
-  * `:method` - the request method: `:get`, `:post`, `:head`, `:delete` or `:patch`
+  * `:method` - the request method: `:get`, `:post`, `:head`, `:delete`, `:patch` or `:put`
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by [`client`](#babashka.http-client/client). If not provided a default client will be used.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.

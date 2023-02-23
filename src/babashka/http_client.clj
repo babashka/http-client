@@ -32,7 +32,7 @@
   * `:uri` - the uri to request (required).
      May be a string or map of `:schema` (required), `:host` (required), `:port`, `:path` and `:query`
   * `:headers` - a map of headers
-  * `:method` - the request method: `:get`, `:post`, `:head`, `:delete` or `:patch`
+  * `:method` - the request method: `:get`, `:post`, `:head`, `:delete`, `:patch` or `:put`
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by `client`. If not provided a default client will be used.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
@@ -77,4 +77,13 @@
    (let [opts (assoc opts
                      :uri url
                      :method :patch)]
+     (request opts))))
+
+(defn put
+  "Convenience wrapper for `request` with method `:put`"
+  ([url] (put url nil))
+  ([url opts]
+   (let [opts (assoc opts
+                     :uri url
+                     :method :put)]
      (request opts))))

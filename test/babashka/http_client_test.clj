@@ -106,6 +106,12 @@
                           {:body "hello"}))
        "hello")))
 
+(deftest put-test
+  (is (str/includes?
+       (:body (http/put "https://postman-echo.com/put"
+                          {:body "hello"}))
+       "hello")))
+
 (deftest basic-auth-test
   (is (re-find #"authenticated.*true"
                (:body
