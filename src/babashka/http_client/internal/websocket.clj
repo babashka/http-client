@@ -86,20 +86,20 @@
            subprotocols
            async]
     :as opts}]
-  (def o opts)
   (let [^HttpClient http-client client
         ^WebSocket$Listener listener (request->WebSocketListener opts)]
     (cond-> (.newWebSocketBuilder http-client)
-      connect-timeout    (.connectTimeout (Duration/ofMillis connect-timeout))
+      connect-timeout (.connectTimeout (Duration/ofMillis connect-timeout))
       (seq subprotocols) (.subprotocols (first subprotocols) (into-array String (rest subprotocols)))
-      headers            (with-headers headers)
-      true               (.buildAsync (URI/create (ics/uri->str uri)) listener)
-      (not async)        deref)))
+      headers (with-headers headers)
+      true (.buildAsync (URI/create (ics/uri->str uri)) listener)
+      (not async) deref)))
 
 (defn ->buffer ^java.nio.ByteBuffer [x]
-  (if (bytes? x)
-    (java.nio.ByteBuffer/wrap ^bytes x)
-    x))
+  (cond (bytes? x)
+        (java.nio.ByteBuffer/wrap ^bytes x)
+        (string? x) (recur (.getBytes ^String x))
+        :else x))
 
 (defn send!
   ([^WebSocket ws data]
@@ -118,7 +118,7 @@
 (defn ^CompletableFuture pong!
   "Sends a Pong message with bytes from the given buffer."
   [^WebSocket ws ^ByteBuffer data]
-  (.sendPong ws data))
+  (.sendPong ws (->buffer data)))
 
 (defn ^CompletableFuture close!
   "Initiates an orderly closure of this WebSocket's output by sending a
