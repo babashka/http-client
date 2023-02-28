@@ -17,6 +17,7 @@
     -  [`decompress-body`](#babashka.http-client.interceptors/decompress-body) - Response: decompresses body based on "content-encoding" header.
     -  [`default-interceptors`](#babashka.http-client.interceptors/default-interceptors) - Default interceptor chain.
     -  [`form-params`](#babashka.http-client.interceptors/form-params) - Request: encodes <code>:form-params</code> map and adds <code>:body</code>.
+    -  [`multipart`](#babashka.http-client.interceptors/multipart) - Adds appropriate body and header if making a multipart request.
     -  [`query-params`](#babashka.http-client.interceptors/query-params) - Request: encodes <code>:query-params</code> map and appends to <code>:uri</code>.
     -  [`throw-on-exceptional-status-code`](#babashka.http-client.interceptors/throw-on-exceptional-status-code) - Response: throw on exceptional status codes.
     -  [`unexceptional-statuses`](#babashka.http-client.interceptors/unexceptional-statuses)
@@ -111,7 +112,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:post`
 
-## <a name="babashka.http-client/put">`put`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L72-L79)
+## <a name="babashka.http-client/put">`put`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L81-L88)
 <a name="babashka.http-client/put"></a>
 ``` clojure
 
@@ -137,7 +138,7 @@ Perform request. Returns map with at least `:body`, `:status`
   * `:uri` - the uri to request (required).
      May be a string or map of `:schema` (required), `:host` (required), `:port`, `:path` and `:query`
   * `:headers` - a map of headers
-  * `:method` - the request method: `:get`, `:post`, `:head`, `:delete` or `:patch`
+  * `:method` - the request method: `:get`, `:post`, `:head`, `:delete`, `:patch` or `:put`
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by [`client`](#babashka.http-client/client). If not provided a default client will be used.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
@@ -153,51 +154,56 @@ Perform request. Returns map with at least `:body`, `:status`
 
 
 
-## <a name="babashka.http-client.interceptors/accept-header">`accept-header`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L71-L83)
+## <a name="babashka.http-client.interceptors/accept-header">`accept-header`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L72-L84)
 <a name="babashka.http-client.interceptors/accept-header"></a>
 
 Request: adds `:accept` header. Only supported value is `:json`.
 
-## <a name="babashka.http-client.interceptors/basic-auth">`basic-auth`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L58-L69)
+## <a name="babashka.http-client.interceptors/basic-auth">`basic-auth`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L59-L70)
 <a name="babashka.http-client.interceptors/basic-auth"></a>
 
 Request: adds `:authorization` header based on `:basic-auth` (a map
   of `:user` and `:pass`) in request.
 
-## <a name="babashka.http-client.interceptors/construct-uri">`construct-uri`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L172-L187)
+## <a name="babashka.http-client.interceptors/construct-uri">`construct-uri`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L174-L189)
 <a name="babashka.http-client.interceptors/construct-uri"></a>
 
 Request: construct uri from map
 
-## <a name="babashka.http-client.interceptors/decode-body">`decode-body`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L160-L170)
+## <a name="babashka.http-client.interceptors/decode-body">`decode-body`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L162-L172)
 <a name="babashka.http-client.interceptors/decode-body"></a>
 
 Response: based on the value of `:as` in request, decodes as `:string`, `:stream` or `:bytes`. Defaults to `:string`.
 
-## <a name="babashka.http-client.interceptors/decompress-body">`decompress-body`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L147-L153)
+## <a name="babashka.http-client.interceptors/decompress-body">`decompress-body`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L148-L155)
 <a name="babashka.http-client.interceptors/decompress-body"></a>
 
 Response: decompresses body based on  "content-encoding" header. Valid values: `gzip` and `deflate`.
 
-## <a name="babashka.http-client.interceptors/default-interceptors">`default-interceptors`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L202-L211)
+## <a name="babashka.http-client.interceptors/default-interceptors">`default-interceptors`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L216-L226)
 <a name="babashka.http-client.interceptors/default-interceptors"></a>
 
 Default interceptor chain. Interceptors are called in order for request and in reverse order for response.
 
-## <a name="babashka.http-client.interceptors/form-params">`form-params`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L93-L103)
+## <a name="babashka.http-client.interceptors/form-params">`form-params`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L94-L104)
 <a name="babashka.http-client.interceptors/form-params"></a>
 
 Request: encodes `:form-params` map and adds `:body`.
 
-## <a name="babashka.http-client.interceptors/query-params">`query-params`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L85-L91)
+## <a name="babashka.http-client.interceptors/multipart">`multipart`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L204-L214)
+<a name="babashka.http-client.interceptors/multipart"></a>
+
+Adds appropriate body and header if making a multipart request.
+
+## <a name="babashka.http-client.interceptors/query-params">`query-params`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L86-L92)
 <a name="babashka.http-client.interceptors/query-params"></a>
 
 Request: encodes `:query-params` map and appends to `:uri`.
 
-## <a name="babashka.http-client.interceptors/throw-on-exceptional-status-code">`throw-on-exceptional-status-code`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L192-L200)
+## <a name="babashka.http-client.interceptors/throw-on-exceptional-status-code">`throw-on-exceptional-status-code`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L194-L202)
 <a name="babashka.http-client.interceptors/throw-on-exceptional-status-code"></a>
 
 Response: throw on exceptional status codes
 
-## <a name="babashka.http-client.interceptors/unexceptional-statuses">`unexceptional-statuses`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L189-L190)
+## <a name="babashka.http-client.interceptors/unexceptional-statuses">`unexceptional-statuses`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L191-L192)
 <a name="babashka.http-client.interceptors/unexceptional-statuses"></a>
