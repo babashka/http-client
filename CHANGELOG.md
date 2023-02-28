@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## 0.1.5
+
+- Add `http/put` convenience function
+
 ## 0.1.4
 
 - Implement `:multipart` uploads, largely based on [hato](https://github.com/gnarroway/hato)'s implementation

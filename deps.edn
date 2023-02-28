@@ -1,7 +1,7 @@
 {:deps {}
  :aliases
  {:neil {:project {:name org.babashka/http-client
-                   :version "0.1.4"}}
+                   :version "0.1.5"}}
   :repl {:extra-deps {cheshire/cheshire {:mvn/version "5.11.0"}}}
   :test ;; added by neil
   {:extra-paths ["test"]
