@@ -1,5 +1,6 @@
 (ns babashka.http-client-test
   (:require
+   [babashka.http-client :as http]
    [babashka.http-client.internal.version :as iv]
    [cheshire.core :as json]
    [clojure.java.io :as io]
@@ -333,6 +334,14 @@
       (let [resp (http/get "http://localhost:12233/200"
                            {:interceptors interceptors
                             :as :json})]
+        (is (= 200 (-> resp :body
+                       ;; response as JSON
+                       :code)))))
+    (testing "interceptors on client"
+      (let [client (http/client (assoc-in http/default-client-opts
+                                          [:request :interceptors] interceptors))
+            resp (http/get "http://localhost:12233/200"
+                           {:client client})]
         (is (= 200 (-> resp :body
                        ;; response as JSON
                        :code)))))))
