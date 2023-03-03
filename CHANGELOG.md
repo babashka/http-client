@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## 0.1.6
+
+- Merge client `:request` options earlier to pick up on `:interceptors` settings
+
 ## 0.1.5
 
 - Add `http/put` convenience function
