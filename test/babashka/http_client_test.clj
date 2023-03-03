@@ -4,9 +4,32 @@
    [cheshire.core :as json]
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.test :refer [deftest is testing]])
+   [clojure.test :refer [deftest is testing]]
+   [org.httpkit.server :as server])
   (:import
    (clojure.lang ExceptionInfo)))
+
+(def server
+  (server/run-server (fn [{:keys [uri] :as req}]
+                       (let [status (parse-long (subs uri 1))
+                             json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
+                         (case status
+                           200 (let [body (if json?
+                                            (json/generate-string {:code 200})
+                                            "200 OK")]
+                                 {:status 200
+                                  :body body})
+                           404 {:status 404
+                                :body "404 Not Found"}
+                           302 {:status 302
+                                :headers {"location" "/200"}}
+                           {:status status
+                            :body (str status)})))
+                     {:port 12233
+                      :legacy-return-value? false}))
+
+(defn stop-server []
+  (server/server-stop! server))
 
 ;; reload client so we're not testing the built-in namespace in bb
 
@@ -18,10 +41,10 @@
   (println))
 
 (deftest get-test
-  (is (str/includes? (:body (http/get "https://httpstat.us/200"))
+  (is (str/includes? (:body (http/get "http://localhost:12233/200"))
                      "200"))
   (is (= 200
-         (-> (http/get "https://httpstat.us/200"
+         (-> (http/get "http://localhost:12233/200"
                        {:headers {"Accept" "application/json"}})
              :body
              (json/parse-string true)
@@ -109,7 +132,7 @@
 (deftest put-test
   (is (str/includes?
        (:body (http/put "https://postman-echo.com/put"
-                          {:body "hello"}))
+                        {:body "hello"}))
        "hello")))
 
 (deftest basic-auth-test
@@ -119,14 +142,14 @@
                           {:basic-auth ["postman" "password"]})))))
 
 (deftest get-response-object-test
-  (let [response (http/get "https://httpstat.us/200")]
+  (let [response (http/get "http://localhost:12233/200")]
     (is (map? response))
     (is (= 200 (:status response)))
     (is (= "200 OK" (:body response)))
     (is (string? (get-in response [:headers "server"]))))
 
   (testing "response object as stream"
-    (let [response (http/get "https://httpstat.us/200" {:as :stream})]
+    (let [response (http/get "http://localhost:12233/200" {:as :stream})]
       (is (map? response))
       (is (= 200 (:status response)))
       (is (instance? java.io.InputStream (:body response)))
@@ -149,7 +172,7 @@
 
 (deftest accept-header-test
   (is (= 200
-         (-> (http/get "https://httpstat.us/200"
+         (-> (http/get "http://localhost:12233/200"
                        {:accept :json})
              :body
              (json/parse-string true)
@@ -235,17 +258,17 @@
 
 (deftest exceptional-status-test
   (testing "should throw"
-    (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404")))
+    (let [ex (is (thrown? ExceptionInfo (http/get "http://localhost:12233/404")))
           response (ex-data ex)]
       (is (= 404 (:status response)))))
   (testing "should throw when streaming based on status code"
-    (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404" {:throw true
-                                                                             :as :stream})))
+    (let [ex (is (thrown? ExceptionInfo (http/get "http://localhost:12233/404" {:throw true
+                                                                                :as :stream})))
           response (ex-data ex)]
       (is (= 404 (:status response)))
       (is (= "404 Not Found" (slurp (:body response))))))
   (testing "should not throw"
-    (let [response (http/get "https://httpstat.us/404" {:throw false})]
+    (let [response (http/get "http://localhost:12233/404" {:throw false})]
       (is (= 404 (:status response))))))
 
 (deftest compressed-test
@@ -273,7 +296,7 @@
 
 (deftest header-with-keyword-key-test
   (is (= 200
-         (-> (http/get "https://httpstat.us/200"
+         (-> (http/get "http://localhost:12233/200"
                        {:headers {:accept "application/json"}})
              :body
              (json/parse-string true)
@@ -281,10 +304,10 @@
 
 (deftest follow-redirects-test
   (testing "default behaviour of following redirects automatically"
-    (is (= 200 (:status (http/get "https://httpstat.us/302")))))
+    (is (= 200 (:status (http/get "http://localhost:12233/302")))))
 
   (testing "follow redirects set to false"
-    (is (= 302 (:status (http/get "https://httpstat.us/302" {:client (http/client {:follow-redirects false})}))))))
+    (is (= 302 (:status (http/get "http://localhost:12233/302" {:client (http/client {:follow-redirects false})}))))))
 
 (deftest interceptor-test
   (let [json-interceptor
@@ -307,7 +330,7 @@
         ;; It will be the first to see the request and the last to see the response
         interceptors (cons json-interceptor interceptors/default-interceptors)]
     (testing "interceptors on request"
-      (let [resp (http/get "https://httpstat.us/200"
+      (let [resp (http/get "http://localhost:12233/200"
                            {:interceptors interceptors
                             :as :json})]
         (is (= 200 (-> resp :body
