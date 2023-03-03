@@ -1,6 +1,5 @@
 (ns babashka.http-client-test
   (:require
-   [babashka.http-client :as http]
    [babashka.http-client.internal.version :as iv]
    [cheshire.core :as json]
    [clojure.java.io :as io]
@@ -10,27 +9,41 @@
   (:import
    (clojure.lang ExceptionInfo)))
 
-(def server
-  (server/run-server (fn [{:keys [uri] :as req}]
-                       (let [status (parse-long (subs uri 1))
-                             json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
-                         (case status
-                           200 (let [body (if json?
-                                            (json/generate-string {:code 200})
-                                            "200 OK")]
-                                 {:status 200
-                                  :body body})
-                           404 {:status 404
-                                :body "404 Not Found"}
-                           302 {:status 302
-                                :headers {"location" "/200"}}
-                           {:status status
-                            :body (str status)})))
-                     {:port 12233
-                      :legacy-return-value? false}))
+(def !server (atom nil))
+
+(defn run-server []
+  (let [server
+        (server/run-server
+         (fn [{:keys [uri] :as req}]
+           (let [status (parse-long (subs uri 1))
+                 json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
+             (case status
+               200 (let [body (if json?
+                                (json/generate-string {:code 200})
+                                "200 OK")]
+                     {:status 200
+                      :body body})
+               404 {:status 404
+                    :body "404 Not Found"}
+               302 {:status 302
+                    :headers {"location" "/200"}}
+               {:status status
+                :body (str status)})))
+         {:port 12233
+          :legacy-return-value? false})]
+    (reset! !server server)))
 
 (defn stop-server []
-  (server/server-stop! server))
+  (server/server-stop! @!server))
+
+(defn my-test-fixture [f]
+  (println "Spinning up server")
+  (run-server)
+  (f)
+  (println "Tearing down server")
+  (stop-server))
+
+(clojure.test/use-fixtures :once my-test-fixture)
 
 ;; reload client so we're not testing the built-in namespace in bb
 
