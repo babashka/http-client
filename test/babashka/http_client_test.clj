@@ -341,7 +341,8 @@
       (let [client (http/client (assoc-in http/default-client-opts
                                           [:request :interceptors] interceptors))
             resp (http/get "http://localhost:12233/200"
-                           {:client client})]
+                           {:client client
+                            :as :json})]
         (is (= 200 (-> resp :body
                        ;; response as JSON
                        :code)))))))
