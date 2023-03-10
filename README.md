@@ -1,5 +1,8 @@
 # http-client
 
+[![Clojars Project](https://img.shields.io/clojars/v/org.babashka/http-client.svg)](https://clojars.org/org.babashka/http-client)
+[![bb built-in](https://raw.githubusercontent.com/babashka/babashka/master/logo/built-in-badge.svg)](https://babashka.org)
+
 An HTTP client for Clojure and Babashka built on `java.net.http`.
 
 ## API
@@ -19,7 +22,7 @@ will be built into babashka.
 Use as a dependency in `deps.edn` or `bb.edn`:
 
 ``` clojure
-org.babashka/http-client {:mvn/version "0.1.4"}
+org.babashka/http-client {:mvn/version "0.1.6"}
 ```
 
 ## Rationale
