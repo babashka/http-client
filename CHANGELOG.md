@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- Change `:follow-redirects` option from `:always` to the safer `:normal`
+
 ## 0.1.6
 
 - Merge client `:request` options earlier to pick up on `:interceptors` settings

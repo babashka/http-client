@@ -69,7 +69,7 @@
     :type :babashka.http-client/client}))
 
 (def default-client-opts
-  {:follow-redirects :always
+  {:follow-redirects :normal
    :request {:headers {:accept "*/*"
                        :accept-encoding ["gzip" "deflate"]
                        :user-agent (str "babashka.http-client/" iv/version)}}})
