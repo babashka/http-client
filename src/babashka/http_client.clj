@@ -13,6 +13,7 @@
   * `:follow-redirects` - `:never`, `:always` or `:normal`
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
+  * `:executor` - a `java.util.concurrent.Executor`
 
   Returns map with:
 
