@@ -10,7 +10,7 @@
   "Construct a custom client. To get the same behavior as the (implicit) default client, pass `default-client-opts`.
 
   Options:
-  * `:follow-redirects` - `:never`, `:always` or `:normal` (default)
+  * `:follow-redirects` - `:never`, `:always` or `:normal`
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
   * `:executor` - a `java.util.concurrent.Executor`
