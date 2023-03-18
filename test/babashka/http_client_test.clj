@@ -2,6 +2,7 @@
   (:require
    [babashka.http-client.internal.version :as iv]
    [cheshire.core :as json]
+   [babashka.fs :as fs]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
@@ -15,13 +16,14 @@
 (defn run-server []
   (let [server
         (server/run-server
-         (fn [{:keys [uri] :as req}]
+         (fn [{:keys [uri body] :as req}]
            (let [status (parse-long (subs uri 1))
                  json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
              (case status
                200 (let [body (if json?
                                 (json/generate-string {:code 200})
-                                "200 OK")]
+                                (if body body
+                                    "200 OK"))]
                      {:status 200
                       :body body})
                404 {:status 404
@@ -92,11 +94,21 @@
        (:body (http/post "https://postman-echo.com/post"
                          {:body "From Clojure"}))
        "From Clojure"))
-  (testing "file body"
+  (testing "text file body"
     (is (str/includes?
          (:body (http/post "https://postman-echo.com/post"
                            {:body (io/file "README.md")}))
          "babashka")))
+  (testing "binary file body"
+    (let [file-bytes (fs/read-all-bytes (io/file "icon.png"))
+          body1 (:body (http/post "http://localhost:12233/200"
+                                  {:body (io/file "icon.png")
+                                   :as :bytes}))
+          body2 (:body (http/post "http://localhost:12233/200"
+                                  {:body (fs/path "icon.png")
+                                   :as :bytes}))]
+      (is (java.util.Arrays/equals file-bytes body1))
+      (is (java.util.Arrays/equals file-bytes body2))))
   (testing "JSON body"
     (let [response (http/post "https://postman-echo.com/post"
                               {:headers {"Content-Type" "application/json"}

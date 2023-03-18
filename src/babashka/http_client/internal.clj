@@ -3,7 +3,8 @@
   (:require
    [babashka.http-client.interceptors :as interceptors]
    [babashka.http-client.internal.version :as iv]
-   [clojure.string :as str])
+   [clojure.string :as str]
+   [clojure.java.io :as io])
   (:import
    [java.net URI URLEncoder]
    [java.net.http
@@ -115,7 +116,12 @@
     (HttpRequest$BodyPublishers/ofByteArray body)
 
     (instance? java.io.File body)
-    (HttpRequest$BodyPublishers/ofString (slurp body))
+    (let [^java.nio.file.Path path (.toPath (io/file body))]
+      (HttpRequest$BodyPublishers/ofFile path))
+
+    (instance? java.nio.file.Path body)
+    (let [^java.nio.file.Path path body]
+      (HttpRequest$BodyPublishers/ofFile path))
 
     :else
     (throw (ex-info (str "Don't know how to convert " (type body) "to body")

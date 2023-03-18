@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## 0.1.8
+
+- Fix binary file uploads
+
 ## 0.1.7
 
 - Add `:async-then` and `:async-catch` callbacks that go together with `:async`
