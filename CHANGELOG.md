@@ -2,8 +2,9 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.1.7
 
+- Add `:async-then` and `:async-catch` callbacks that go together with `:async`
 - Change `:follow-redirects` option from `:always` to the safer `:normal`
 
 ## 0.1.6
