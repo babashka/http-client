@@ -5,7 +5,8 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [org.httpkit.server :as server])
+   [org.httpkit.server :as server]
+   [borkdude.deflet :refer [deflet]])
   (:import
    (clojure.lang ExceptionInfo)))
 
@@ -375,3 +376,24 @@
     (is (str/starts-with? (:content-type headers) "multipart/form-data; boundary=babashka_http_client_Boundary"))
     (is (some? (:dude (:files resp-body))))
     (is (= "My Awesome Picture" (-> resp-body :form :title)))))
+
+(deftest async-test
+  (deflet
+    (def async-resp (http/get "http://localhost:12233/200" {:async true}))
+    (is (instance? java.util.concurrent.CompletableFuture async-resp))
+    (is (= 200 (:status @async-resp)))
+    (def async-resp (http/get "http://localhost:12233/200" {:async true
+                                                            :async-then (fn [resp]
+                                                                          (:status resp))}))
+    (is (= 200 @async-resp))
+    (def async-resp (http/get "http://localhost:12233/404" {:async true
+                                                            :async-then (fn [resp]
+                                                                          (:status resp))
+                                                            :async-catch (fn [e]
+                                                                           (:ex-data e))}))
+    (is (= 404 (:status @async-resp)))))
+
+(comment
+  (run-server)
+  (stop-server)
+  )

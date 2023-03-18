@@ -36,6 +36,8 @@
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by `client`. If not provided a default client will be used.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
+  * `:async-then` - a function that is called on the async result if successful
+  * `:async-catch` - a function that is called on the async result if exceptional
   * `:timeout` - request timeout in milliseconds.
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
   "

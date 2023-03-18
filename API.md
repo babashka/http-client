@@ -58,7 +58,7 @@ Construct a custom client. To get the same behavior as the (implicit) default cl
 
 Options used to create the (implicit) default client.
 
-## <a name="babashka.http-client/delete">`delete`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L52-L57)
+## <a name="babashka.http-client/delete">`delete`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L54-L59)
 <a name="babashka.http-client/delete"></a>
 ``` clojure
 
@@ -69,7 +69,7 @@ Options used to create the (implicit) default client.
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:delete`
 
-## <a name="babashka.http-client/get">`get`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L45-L50)
+## <a name="babashka.http-client/get">`get`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L47-L52)
 <a name="babashka.http-client/get"></a>
 ``` clojure
 
@@ -80,7 +80,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:get`
 
-## <a name="babashka.http-client/head">`head`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L59-L64)
+## <a name="babashka.http-client/head">`head`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L61-L66)
 <a name="babashka.http-client/head"></a>
 ``` clojure
 
@@ -91,7 +91,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:head`
 
-## <a name="babashka.http-client/patch">`patch`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L73-L80)
+## <a name="babashka.http-client/patch">`patch`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L75-L82)
 <a name="babashka.http-client/patch"></a>
 ``` clojure
 
@@ -102,7 +102,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:patch`
 
-## <a name="babashka.http-client/post">`post`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L66-L71)
+## <a name="babashka.http-client/post">`post`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L68-L73)
 <a name="babashka.http-client/post"></a>
 ``` clojure
 
@@ -113,7 +113,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:post`
 
-## <a name="babashka.http-client/put">`put`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L82-L89)
+## <a name="babashka.http-client/put">`put`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L84-L91)
 <a name="babashka.http-client/put"></a>
 ``` clojure
 
@@ -124,7 +124,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:put`
 
-## <a name="babashka.http-client/request">`request`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L27-L43)
+## <a name="babashka.http-client/request">`request`</a> [📃](https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L27-L45)
 <a name="babashka.http-client/request"></a>
 ``` clojure
 
@@ -143,6 +143,8 @@ Perform request. Returns map with at least `:body`, `:status`
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by [`client`](#babashka.http-client/client). If not provided a default client will be used.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
+  * `:async-then` - a function that is called on the async result if successful
+  * `:async-catch` - a function that is called on the async result if exceptional
   * `:timeout` - request timeout in milliseconds.
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
   

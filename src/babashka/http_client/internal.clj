@@ -202,16 +202,38 @@
                                  interceptors/default-interceptors)
         req (apply-interceptors req request-interceptors :request)
         req' (ring->HttpRequest req)
-        resp (if (:async req)
+        async (:async req)
+        resp (if async
                (.sendAsync client req' (HttpResponse$BodyHandlers/ofInputStream))
                (.send client req' (HttpResponse$BodyHandlers/ofInputStream)))]
     (if raw resp
         (let [resp (then resp response->map)
               resp (then resp (fn [resp]
-                                (assoc resp :request req)))]
-          (reduce (fn [resp interceptor]
-                    (if-let [f (:response interceptor)]
-                      (then resp f)
-                      resp))
-                  resp (reverse (or (:interceptors req)
-                                    interceptors/default-interceptors)))))))
+                                (assoc resp :request req)))
+              resp (reduce (fn [resp interceptor]
+                             (if-let [f (:response interceptor)]
+                               (then resp f)
+                               resp))
+                           resp (reverse (or (:interceptors req)
+                                             interceptors/default-interceptors)))]
+          (if async
+            (-> ^CompletableFuture resp
+                (.thenApply
+                 (reify Function
+                   (apply [_ resp]
+                     (if-let [then-fn (:async-then req)]
+                       (then-fn resp)
+                       resp))))
+                (.exceptionally
+                 (reify Function
+                   (apply [_ e]
+                     (let [^Throwable e e]
+                       (if-let [catch-fn (:async-catch req)]
+                         (catch-fn (let [cause (ex-cause e)]
+                                     {:ex e
+                                      :ex-cause cause
+                                      :ex-data (ex-data (or cause e))
+                                      :ex-message (ex-message (or cause e))
+                                      :request req}))
+                         resp))))))
+            resp)))))

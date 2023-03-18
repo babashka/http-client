@@ -1,11 +1,13 @@
 {:deps {}
  :aliases
  {:neil {:project {:name org.babashka/http-client
-                   :version "0.1.6"}}
-  :repl {:extra-deps {cheshire/cheshire {:mvn/version "5.11.0"}}}
+                   :version "0.1.7"}}
+  :repl {:extra-deps {cheshire/cheshire {:mvn/version "5.11.0"}
+                      io.github.borkdude/deflet {:mvn/version "0.1.0"}}}
   :test ;; added by neil
   {:extra-paths ["test"]
    :extra-deps {cheshire/cheshire {:mvn/version "5.11.0"}
+                io.github.borkdude/deflet {:mvn/version "0.1.0"}
                 io.github.cognitect-labs/test-runner
                 {:git/tag "v0.5.0" :git/sha "b3fd0d2"}
                 http-kit/http-kit {:mvn/version "2.6.0"}}
