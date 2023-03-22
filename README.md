@@ -9,13 +9,13 @@ An HTTP client for Clojure and Babashka built on `java.net.http`.
 
 See [API.md](API.md).
 
-## Status
-
-This library is in flux. Feedback is welcome. It can be used in production, but
-expect breaking changes. When this library is considered stable (API-wise) it
-will be built into babashka.
-
 > NOTE: The `babashka.http-client` library is built-in as of babashka version 1.1.171.
+
+## Stability
+
+The `babashka.http-client` namespace can be considered stable. The
+`babashka.http-client.interceptors` namespace may still undergo some breaking
+changes.
 
 ## Installation
 
