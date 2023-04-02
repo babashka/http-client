@@ -35,6 +35,10 @@
   * `:method` - the request method: `:get`, `:post`, `:head`, `:delete`, `:patch` or `:put`
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by `client`. If not provided a default client will be used.
+  * `:query-params` - a map of query params. The values can be a list to send multiple params with the same key.
+  * `:form-params` - a map of form params to send in the request body.
+  * `:body` - a file, inputstream or string to send as the request body.
+  * `:basic-auth` - a sequence of `user` `password` or map with `:user` `:pass` used for basic auth.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
   * `:async-then` - a function that is called on the async result if successful
   * `:async-catch` - a function that is called on the async result if exceptional
