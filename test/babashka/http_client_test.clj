@@ -57,6 +57,14 @@
   (println "===" (-> m :var meta :name))
   (println))
 
+(deftest request-uri-test
+  (is (= 200 (:status (http/head "http://localhost:12233/200"))))
+  (is (= 200 (:status (http/head {:scheme "http"
+                                  :host "localhost"
+                                  :port 12233
+                                  :path "/200"}))))
+  (is (= 200 (:status (http/head (java.net.URI. "http://localhost:12233/200"))))))
+
 (deftest get-test
   (is (str/includes? (:body (http/get "http://localhost:12233/200"))
                      "200"))

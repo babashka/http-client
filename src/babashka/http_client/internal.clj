@@ -155,7 +155,7 @@
       (seq headers)            (.headers (into-array String (coerce-headers headers)))
       method                   (.method (method-keyword->str method) (->body-publisher body))
       timeout                  (.timeout (->timeout timeout))
-      uri                      (.uri (URI/create uri))
+      uri                      (.uri (URI/create (str uri)))
       version                  (.version (version-keyword->version-enum version)))))
 
 (defn- apply-interceptors [init interceptors k]
