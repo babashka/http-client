@@ -30,7 +30,7 @@
   Options:
 
   * `:uri` - the uri to request (required).
-     May be a string or map of `:schema` (required), `:host` (required), `:port`, `:path` and `:query`
+     May be a string or map of `:scheme` (required), `:host` (required), `:port`, `:path` and `:query`
   * `:headers` - a map of headers
   * `:method` - the request method: `:get`, `:post`, `:head`, `:delete`, `:patch` or `:put`
   * `:interceptors` - custom interceptor chain

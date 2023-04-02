@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- Accept `java.net.URI` as uri directly in `request`, `get`, etc.
+
 ## 0.1.8
 
 - Fix binary file uploads

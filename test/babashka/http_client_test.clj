@@ -1,13 +1,13 @@
 (ns babashka.http-client-test
   (:require
-   [babashka.http-client.internal.version :as iv]
-   [cheshire.core :as json]
    [babashka.fs :as fs]
+   [babashka.http-client.internal.version :as iv]
+   [borkdude.deflet :refer [deflet]]
+   [cheshire.core :as json]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [org.httpkit.server :as server]
-   [borkdude.deflet :refer [deflet]])
+   [org.httpkit.server :as server])
   (:import
    (clojure.lang ExceptionInfo)))
 
@@ -76,7 +76,14 @@
            (-> (http/get "https://postman-echo.com/get" {:query-params {"foo1" ["bar1" "bar2"]}})
                :body
                (json/parse-string true)
-               :args)))))
+               :args))))
+  (testing "can pass uri"
+    (is (= 200
+           (-> (http/get (java.net.URI. "http://localhost:12233/200")
+                         {:headers {"Accept" "application/json"}})
+               :body
+               (json/parse-string true)
+               :code)))))
 
 (deftest delete-test
   (is (= 200 (:status (http/delete "https://postman-echo.com/delete")))))
@@ -212,16 +219,13 @@
              (json/parse-string)
              (get "args")))))
 
-;; (deftest low-level-url-test
-;;   (let [response (-> (client/request {:url {:scheme "https"
-;;                                           :host   "httpbin.org"
-;;                                           :port   443
-;;                                           :path   "/get"
-;;                                           :query  "q=test"}})
-;;                      :body
-;;                      (json/parse-string true))]
-;;     (is (= {:q "test"} (:args response)))
-;;     (is (= "httpbin.org" (get-in response [:headers :Host])))))
+(deftest request-uri-test
+  (is (= 200 (:status (http/head "http://localhost:12233/200"))))
+  (is (= 200 (:status (http/head {:scheme "http"
+                                  :host "localhost"
+                                  :port 12233
+                                  :path "/200"}))))
+  (is (= 200 (:status (http/head (java.net.URI. "http://localhost:12233/200"))))))
 
 ;; (deftest download-binary-file-as-stream-test
 ;;   (testing "download image"
@@ -407,5 +411,4 @@
 
 (comment
   (run-server)
-  (stop-server)
-  )
+  (stop-server))

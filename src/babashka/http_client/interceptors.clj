@@ -27,20 +27,6 @@
   [^String unencoded]
   (URLEncoder/encode unencoded "UTF-8"))
 
-(defn- map->query-params [query-params-map]
-  (loop [params* (transient [])
-         kvs (seq query-params-map)]
-    (if kvs
-      (let [[k v] (first kvs)]
-        (if (and (coll? v)
-                 (seqable? v))
-          (recur params* (concat
-                          (map (fn [v]
-                                 [k v]) v)
-                          (rest kvs)))
-          (recur (conj! params* (str (url-encode (coerce-key k)) "=" (url-encode (str v)))) (next kvs))))
-      (str/join "&" (persistent! params*)))))
-
 (defn- map->form-params [form-params-map]
   (loop [params* (transient [])
          kvs (seq form-params-map)]
@@ -83,12 +69,33 @@
          opts)
        opts))})
 
+(defn- map->query-params [query-params-map]
+  (loop [params* (transient [])
+         kvs (seq query-params-map)]
+    (if kvs
+      (let [[k v] (first kvs)]
+        (if (and (coll? v)
+                 (seqable? v))
+          (recur params* (concat
+                          (map (fn [v]
+                                 [k v]) v)
+                          (rest kvs)))
+          (recur (conj! params* (str (coerce-key k) "=" (str v))) (next kvs))))
+      (str/join "&" (persistent! params*)))))
+
 (def query-params
   "Request: encodes `:query-params` map and appends to `:uri`."
   {:name ::query-params
    :request (fn [opts]
               (if-let [qp (:query-params opts)]
-                (assoc opts :uri (str (:uri opts) "?" (map->query-params qp)))
+                (let [^java.net.URI uri (:uri opts)
+                      old-query (.getQuery uri)
+                      new-query (map->query-params qp)
+                      new-query (if old-query (str old-query "&" new-query)
+                                    new-query)
+                      new-uri (java.net.URI. (.getScheme uri) (.getAuthority uri)
+                                             (.getPath uri) new-query (.getFragment uri))]
+                  (assoc opts :uri new-uri))
                 opts))})
 
 (def form-params
@@ -176,15 +183,15 @@
   {:name ::construct-uri
    :request (fn [req]
               (let [uri (:uri req)
-                    uri (cond (string? uri) uri
+                    uri (cond (string? uri) (java.net.URI/create uri)
                               (map? uri)
-                              (str (java.net.URI. ^String (:scheme uri)
-                                                  ^String (:user uri)
-                                                  ^String (:host uri)
-                                                  ^Integer (:port uri)
-                                                  ^String (:path uri)
-                                                  ^String (:query uri)
-                                                  ^String (:fragment uri)))
+                              (java.net.URI. ^String (:scheme uri)
+                                             ^String (:user uri)
+                                             ^String (:host uri)
+                                             ^Integer (:port uri)
+                                             ^String (:path uri)
+                                             ^String (:query uri)
+                                             ^String (:fragment uri))
                               :else uri)]
                 (assoc req :uri uri)))})
 
