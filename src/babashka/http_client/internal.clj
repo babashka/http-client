@@ -19,7 +19,10 @@
     HttpResponse$BodyHandlers]
    [java.time Duration]
    [java.util.concurrent CompletableFuture]
-   [java.util.function Function Supplier]))
+   [java.util.function Function Supplier]
+   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager X509TrustManager]
+   [java.security KeyStore SecureRandom]
+   [java.security.cert X509Certificate]))
 
 (set! *warn-on-reflection* true)
 
@@ -38,6 +41,54 @@
   (if (integer? t)
     (Duration/ofMillis t)
     t))
+
+(defn- load-keystore
+  ^KeyStore [store store-type store-pass]
+  (when store
+    (with-open [kss (io/input-stream store)]
+      (doto (KeyStore/getInstance store-type)
+        (.load kss (char-array store-pass))))))
+
+(def insecure-tm (reify X509TrustManager
+                   (checkClientTrusted [_ _ _])
+                   (checkServerTrusted [_ _ _])
+                   (getAcceptedIssuers [_] (into-array X509Certificate []))))
+
+(defn ->SSLContext
+  "Returns an SSLContext.
+
+  `v` should be an SSLContext, or a map with the following keys:
+
+  `keystore` is an URL e.g. (io/resource somepath.p12)
+  `keystore-pass` is the password for the keystore
+  `keystore-type` is the type of keystore to create [note: not the type of the file] (default: pkcs12)
+  `trust-store` is an URL e.g. (io/resource cacerts.p12)
+  `trust-store-pass` is the password for the trust store
+  `trust-store-type` is the type of trust store to create [note: not the type of the file] (default: pkcs12)
+  `insecure` if true, an insecure trust manager accepting all server certificates will be configured.
+
+  If either `keystore` or `trust-store` are not provided, the respective default will be used, which can be overridden
+  by java options `-Djavax.net.ssl.keyStore` and `-Djavax.net.ssl.trustStore`, respectively."
+  [v]
+  (if (instance? SSLContext v)
+    v
+    (let [{:keys [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass insecure]
+           :or   {keystore-type "pkcs12" trust-store-type "pkcs12"}} v
+
+          key-managers (when-let [ks (load-keystore keystore keystore-type keystore-pass)]
+                         (.getKeyManagers (doto (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm))
+                                            (.init ks (char-array keystore-pass)))))
+
+          trust-managers (if insecure
+                           (into-array TrustManager [insecure-tm])
+                           (when-let [ts (load-keystore trust-store trust-store-type trust-store-pass)]
+                             (.getTrustManagers (doto (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
+                                                  (.init ts)))))]
+
+      (doto (SSLContext/getInstance "TLS")
+        (.init key-managers
+               trust-managers
+               (SecureRandom.))))))
 
 (defn client-builder
   (^HttpClient$Builder []
@@ -59,7 +110,7 @@
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority         (.priority priority)
        proxy            (.proxy proxy)
-       ssl-context      (.sslContext ssl-context)
+       ssl-context      (.sslContext (->SSLContext ssl-context))
        ssl-parameters   (.sslParameters ssl-parameters)
        version          (.version (version-keyword->version-enum version))))))
 
