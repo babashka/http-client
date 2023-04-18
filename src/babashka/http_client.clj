@@ -6,6 +6,25 @@
   "Options used to create the (implicit) default client."
   i/default-client-opts)
 
+(defn ->SSLContext
+  "Constructs a `javax.net.ssl.SSLContext`.
+
+  Options:
+
+  * `:key-store` is a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
+  * `:key-store-pass` is the password for the keystore
+  * `:key-store-type` is the type of keystore to create [note: not the type of the file] (default: pkcs12)
+  * `:trust-store` is a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
+  * `:trust-store-pass` is the password for the trust store
+  * `:trust-store-type` is the type of trust store to create [note: not the type of the file] (default: pkcs12)
+  * `:insecure` if `true`, an insecure trust manager accepting all server certificates will be configured.
+
+  Note that `:keystore` and `:truststore` can be set using the
+  `javax.net.ssl.keyStore` and `javax.net.ssl.trustStore` System
+  properties globally."
+  [opts]
+  (i/->SSLContext opts))
+
 (defn client
   "Construct a custom client. To get the same behavior as the (implicit) default client, pass `default-client-opts`.
 
@@ -14,6 +33,7 @@
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
   * `:executor` - a `java.util.concurrent.Executor`
+  * `:ssl-context`: a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`.
 
   Returns map with:
 

@@ -5,6 +5,7 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 ## Unreleased
 
 - Accept `java.net.URI` as uri directly in `request`, `get`, etc.
+- [#22](https://github.com/babashka/http-client/issues/22): Support options for `:ssl-context`, similar to hato
 
 ## 0.1.8
 

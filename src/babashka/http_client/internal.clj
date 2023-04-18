@@ -3,8 +3,8 @@
   (:require
    [babashka.http-client.interceptors :as interceptors]
    [babashka.http-client.internal.version :as iv]
-   [clojure.string :as str]
-   [clojure.java.io :as io])
+   [clojure.java.io :as io]
+   [clojure.string :as str])
   (:import
    [java.net URI URLEncoder]
    [java.net.http
@@ -17,9 +17,12 @@
     HttpRequest$Builder
     HttpResponse
     HttpResponse$BodyHandlers]
+   [java.security KeyStore SecureRandom]
+   [java.security.cert X509Certificate]
    [java.time Duration]
    [java.util.concurrent CompletableFuture]
-   [java.util.function Function Supplier]))
+   [java.util.function Function Supplier]
+   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager X509TrustManager]))
 
 (set! *warn-on-reflection* true)
 
@@ -32,12 +35,47 @@
 (defn- version-keyword->version-enum [version]
   (case version
     :http1.1 HttpClient$Version/HTTP_1_1
-    :http2   HttpClient$Version/HTTP_2))
+    :http2 HttpClient$Version/HTTP_2))
 
 (defn ->timeout [t]
   (if (integer? t)
     (Duration/ofMillis t)
     t))
+
+(defn- load-keystore
+  ^KeyStore [store store-type store-pass]
+  (when store
+    (with-open [kss (io/input-stream store)]
+      (doto (KeyStore/getInstance store-type)
+        (.load kss (char-array store-pass))))))
+
+(def insecure-tm (reify X509TrustManager
+                   (checkClientTrusted [_ _ _])
+                   (checkServerTrusted [_ _ _])
+                   (getAcceptedIssuers [_] (into-array X509Certificate []))))
+
+(defn ->SSLContext
+  [v]
+  (if (instance? SSLContext v)
+    v
+    (let [{:keys [key-store key-store-type key-store-pass trust-store trust-store-type trust-store-pass insecure]} v
+          ;; compatibility with hato
+          key-store-type (or key-store-type (:keystore-type v) "pkcs12")
+          trust-store-type (or trust-store-type "pkcs12")
+          key-managers (when-let [ks (load-keystore key-store key-store-type key-store-pass)]
+                         (.getKeyManagers (doto (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm))
+                                            (.init ks (char-array key-store-pass)))))
+
+          trust-managers (if insecure
+                           (into-array TrustManager [insecure-tm])
+                           (when-let [ts (load-keystore trust-store trust-store-type trust-store-pass)]
+                             (.getTrustManagers (doto (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
+                                                  (.init ts)))))]
+
+      (doto (SSLContext/getInstance "TLS")
+        (.init key-managers
+               trust-managers
+               (SecureRandom.))))))
 
 (defn client-builder
   (^HttpClient$Builder []
@@ -53,15 +91,15 @@
                  ssl-parameters
                  version]} opts]
      (cond-> (HttpClient/newBuilder)
-       connect-timeout  (.connectTimeout (->timeout connect-timeout))
-       cookie-handler   (.cookieHandler cookie-handler)
-       executor         (.executor executor)
+       connect-timeout (.connectTimeout (->timeout connect-timeout))
+       cookie-handler (.cookieHandler cookie-handler)
+       executor (.executor executor)
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
-       priority         (.priority priority)
-       proxy            (.proxy proxy)
-       ssl-context      (.sslContext ssl-context)
-       ssl-parameters   (.sslParameters ssl-parameters)
-       version          (.version (version-keyword->version-enum version))))))
+       priority (.priority priority)
+       proxy (.proxy proxy)
+       ssl-context (.sslContext (->SSLContext ssl-context))
+       ssl-parameters (.sslParameters ssl-parameters)
+       version (.version (version-keyword->version-enum version))))))
 
 (defn client
   ([opts]
@@ -152,11 +190,11 @@
                 body]} opts]
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
-      (seq headers)            (.headers (into-array String (coerce-headers headers)))
-      method                   (.method (method-keyword->str method) (->body-publisher body))
-      timeout                  (.timeout (->timeout timeout))
-      uri                      (.uri ^URI uri)
-      version                  (.version (version-keyword->version-enum version)))))
+      (seq headers) (.headers (into-array String (coerce-headers headers)))
+      method (.method (method-keyword->str method) (->body-publisher body))
+      timeout (.timeout (->timeout timeout))
+      uri (.uri ^URI uri)
+      version (.version (version-keyword->version-enum version)))))
 
 (defn- apply-interceptors [init interceptors k]
   (reduce (fn [acc i]
@@ -172,7 +210,7 @@
 (defn- version-enum->version-keyword [^HttpClient$Version version]
   (case (.name version)
     "HTTP_1_1" :http1.1
-    "HTTP_2"   :http2))
+    "HTTP_2" :http2))
 
 (defn response->map [^HttpResponse resp]
   {:status (.statusCode resp)

@@ -9,7 +9,8 @@
    [clojure.test :refer [deftest is testing]]
    [org.httpkit.server :as server])
   (:import
-   (clojure.lang ExceptionInfo)))
+   [clojure.lang ExceptionInfo]
+   [javax.net.ssl SSLContext]))
 
 (def !server (atom nil))
 
@@ -408,6 +409,16 @@
                                                             :async-catch (fn [e]
                                                                            (:ex-data e))}))
     (is (= 404 (:status @async-resp)))))
+
+(deftest ssl-context-test
+  ;; keystore was generated with:
+  ;; keytool -keystore keystore.p12 -genkey -alias client -keyalg RSA
+  ;; name: Michiel Borkent
+  (is (not= (SSLContext/getDefault)
+            (.sslContext (:client (http/client {:ssl-context {:key-store "test/keystore.p12"
+                                                              :key-store-pass "bbrocks"
+                                                              :trust-store "test/keystore.p12"
+                                                              :trust-store-pass "bbrocks"}}))))))
 
 (comment
   (run-server)
