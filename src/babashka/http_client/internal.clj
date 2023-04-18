@@ -77,6 +77,14 @@
                trust-managers
                (SecureRandom.))))))
 
+(defn ->ProxySelector
+  [opts]
+  (if (instance? java.net.ProxySelector opts)
+    opts
+    (let [{:keys [host port]} opts]
+      (cond (and host port)
+            (java.net.ProxySelector/of (java.net.InetSocketAddress. ^String host ^long port))))))
+
 (defn client-builder
   (^HttpClient$Builder []
    (client-builder {}))
@@ -96,7 +104,7 @@
        executor (.executor executor)
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)
-       proxy (.proxy proxy)
+       proxy (.proxy (->ProxySelector proxy))
        ssl-context (.sslContext (->SSLContext ssl-context))
        ssl-parameters (.sslParameters ssl-parameters)
        version (.version (version-keyword->version-enum version))))))

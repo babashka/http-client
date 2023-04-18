@@ -6,6 +6,14 @@
   "Options used to create the (implicit) default client."
   i/default-client-opts)
 
+(defn ->ProxySelector
+  "Constructs a `java.net.ProxySelector`.
+  Options:
+  * `:host`, string
+  * `:port`, long"
+  [opts]
+  (i/->ProxySelector opts))
+
 (defn ->SSLContext
   "Constructs a `javax.net.ssl.SSLContext`.
 

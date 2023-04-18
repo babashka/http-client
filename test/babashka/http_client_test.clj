@@ -7,7 +7,8 @@
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [org.httpkit.server :as server])
+   [org.httpkit.server :as server]
+   [babashka.http-client :as http])
   (:import
    [clojure.lang ExceptionInfo]
    [javax.net.ssl SSLContext]))
@@ -419,6 +420,11 @@
                                                               :key-store-pass "bbrocks"
                                                               :trust-store "test/keystore.p12"
                                                               :trust-store-pass "bbrocks"}}))))))
+
+(deftest proxy-selector
+  (is (instance? java.net.ProxySelector
+                 (http/->ProxySelector {:host "https://clojure.org"
+                                        :port 1337}))))
 
 (comment
   (run-server)
