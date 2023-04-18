@@ -97,8 +97,7 @@
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)
        proxy (.proxy proxy)
-       ssl-context (.sslContext (doto (->SSLContext ssl-context)
-                                  prn))
+       ssl-context (.sslContext (->SSLContext ssl-context))
        ssl-parameters (.sslParameters ssl-parameters)
        version (.version (version-keyword->version-enum version))))))
 
