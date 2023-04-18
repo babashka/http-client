@@ -3,8 +3,8 @@
   (:require
    [babashka.http-client.interceptors :as interceptors]
    [babashka.http-client.internal.version :as iv]
-   [clojure.string :as str]
-   [clojure.java.io :as io])
+   [clojure.java.io :as io]
+   [clojure.string :as str])
   (:import
    [java.net URI URLEncoder]
    [java.net.http
@@ -17,12 +17,12 @@
     HttpRequest$Builder
     HttpResponse
     HttpResponse$BodyHandlers]
+   [java.security KeyStore SecureRandom]
+   [java.security.cert X509Certificate]
    [java.time Duration]
    [java.util.concurrent CompletableFuture]
    [java.util.function Function Supplier]
-   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager X509TrustManager]
-   [java.security KeyStore SecureRandom]
-   [java.security.cert X509Certificate]))
+   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager X509TrustManager]))
 
 (set! *warn-on-reflection* true)
 
@@ -35,7 +35,7 @@
 (defn- version-keyword->version-enum [version]
   (case version
     :http1.1 HttpClient$Version/HTTP_1_1
-    :http2   HttpClient$Version/HTTP_2))
+    :http2 HttpClient$Version/HTTP_2))
 
 (defn ->timeout [t]
   (if (integer? t)
@@ -55,29 +55,16 @@
                    (getAcceptedIssuers [_] (into-array X509Certificate []))))
 
 (defn ->SSLContext
-  "Returns an SSLContext.
-
-  `v` should be an SSLContext, or a map with the following keys:
-
-  `keystore` is an URL e.g. (io/resource somepath.p12)
-  `keystore-pass` is the password for the keystore
-  `keystore-type` is the type of keystore to create [note: not the type of the file] (default: pkcs12)
-  `trust-store` is an URL e.g. (io/resource cacerts.p12)
-  `trust-store-pass` is the password for the trust store
-  `trust-store-type` is the type of trust store to create [note: not the type of the file] (default: pkcs12)
-  `insecure` if true, an insecure trust manager accepting all server certificates will be configured.
-
-  If either `keystore` or `trust-store` are not provided, the respective default will be used, which can be overridden
-  by java options `-Djavax.net.ssl.keyStore` and `-Djavax.net.ssl.trustStore`, respectively."
   [v]
   (if (instance? SSLContext v)
     v
-    (let [{:keys [keystore keystore-type keystore-pass trust-store trust-store-type trust-store-pass insecure]
-           :or   {keystore-type "pkcs12" trust-store-type "pkcs12"}} v
-
-          key-managers (when-let [ks (load-keystore keystore keystore-type keystore-pass)]
+    (let [{:keys [key-store key-store-type key-store-pass trust-store trust-store-type trust-store-pass insecure]} v
+          ;; compatibility with hato
+          key-store-type (or key-store-type (:keystore-type v) "pkcs12")
+          trust-store-type (or trust-store-type "pkcs12")
+          key-managers (when-let [ks (load-keystore key-store key-store-type key-store-pass)]
                          (.getKeyManagers (doto (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm))
-                                            (.init ks (char-array keystore-pass)))))
+                                            (.init ks (char-array key-store-pass)))))
 
           trust-managers (if insecure
                            (into-array TrustManager [insecure-tm])
@@ -104,15 +91,16 @@
                  ssl-parameters
                  version]} opts]
      (cond-> (HttpClient/newBuilder)
-       connect-timeout  (.connectTimeout (->timeout connect-timeout))
-       cookie-handler   (.cookieHandler cookie-handler)
-       executor         (.executor executor)
+       connect-timeout (.connectTimeout (->timeout connect-timeout))
+       cookie-handler (.cookieHandler cookie-handler)
+       executor (.executor executor)
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
-       priority         (.priority priority)
-       proxy            (.proxy proxy)
-       ssl-context      (.sslContext (->SSLContext ssl-context))
-       ssl-parameters   (.sslParameters ssl-parameters)
-       version          (.version (version-keyword->version-enum version))))))
+       priority (.priority priority)
+       proxy (.proxy proxy)
+       ssl-context (.sslContext (doto (->SSLContext ssl-context)
+                                  prn))
+       ssl-parameters (.sslParameters ssl-parameters)
+       version (.version (version-keyword->version-enum version))))))
 
 (defn client
   ([opts]
@@ -203,11 +191,11 @@
                 body]} opts]
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
-      (seq headers)            (.headers (into-array String (coerce-headers headers)))
-      method                   (.method (method-keyword->str method) (->body-publisher body))
-      timeout                  (.timeout (->timeout timeout))
-      uri                      (.uri ^URI uri)
-      version                  (.version (version-keyword->version-enum version)))))
+      (seq headers) (.headers (into-array String (coerce-headers headers)))
+      method (.method (method-keyword->str method) (->body-publisher body))
+      timeout (.timeout (->timeout timeout))
+      uri (.uri ^URI uri)
+      version (.version (version-keyword->version-enum version)))))
 
 (defn- apply-interceptors [init interceptors k]
   (reduce (fn [acc i]
@@ -223,7 +211,7 @@
 (defn- version-enum->version-keyword [^HttpClient$Version version]
   (case (.name version)
     "HTTP_1_1" :http1.1
-    "HTTP_2"   :http2))
+    "HTTP_2" :http2))
 
 (defn response->map [^HttpResponse resp]
   {:status (.statusCode resp)
