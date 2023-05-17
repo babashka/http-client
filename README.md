@@ -80,6 +80,12 @@ Passing headers:
 (json/parse-string (:body resp)) ;;=> {"code" 200, "description" "OK"}
 ```
 
+Headers may be provided as keywords as well:
+
+``` clojure
+{:headers {:content-type "application/json"}}
+```
+
 ### Query parameters
 
 Query parameters:
