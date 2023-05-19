@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## 0.3.10
+
+- Fix [#28](https://github.com/babashka/http-client/issues/28): add `:authenticator` option
+
 ## 0.2.9
 
 - Accept `java.net.URI` as uri directly in `request`, `get`, etc.

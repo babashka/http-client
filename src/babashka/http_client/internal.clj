@@ -6,7 +6,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
-   [java.net URI URLEncoder]
+   [java.net URI URLEncoder Authenticator]
    [java.net.http
     HttpClient
     HttpClient$Builder
@@ -85,6 +85,16 @@
       (cond (and host port)
             (java.net.ProxySelector/of (java.net.InetSocketAddress. ^String host ^long port))))))
 
+(defn ->Authenticator
+  [v]
+  (if (instance? Authenticator v)
+    v
+    (let [{:keys [user pass]} v]
+      (when (and user pass)
+        (proxy [Authenticator] []
+          (getPasswordAuthentication []
+            (PasswordAuthentication. user (char-array pass))))))))
+
 (defn client-builder
   (^HttpClient$Builder []
    (client-builder {}))
@@ -95,6 +105,7 @@
                  follow-redirects
                  priority
                  proxy
+                 authenticator
                  ssl-context
                  ssl-parameters
                  version]} opts]
@@ -104,6 +115,7 @@
        executor (.executor executor)
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)
+       authenticator (.authenticator (->Authenticator authenticator))
        proxy (.proxy (->ProxySelector proxy))
        ssl-context (.sslContext (->SSLContext ssl-context))
        ssl-parameters (.sslParameters ssl-parameters)

@@ -33,6 +33,16 @@
   [opts]
   (i/->SSLContext opts))
 
+(defn ->Authenticator
+  "Constructs a `java.net.Authenticator`.
+
+  Options:
+
+  * `:user`: the username
+  * `:pass`: the password"
+  [opts]
+  (i/->Authenticator opts))
+
 (defn client
   "Construct a custom client. To get the same behavior as the (implicit) default client, pass `default-client-opts`.
 
@@ -41,7 +51,9 @@
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
   * `:executor` - a `java.util.concurrent.Executor`
-  * `:ssl-context`: a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`.
+  * `:ssl-context`: a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`
+  * `:proxy`: a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`
+  * `:authenticator`: a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
 
   Returns map with:
 
