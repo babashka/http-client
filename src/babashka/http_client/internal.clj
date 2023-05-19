@@ -6,7 +6,7 @@
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
-   [java.net URI URLEncoder Authenticator]
+   [java.net URI URLEncoder Authenticator PasswordAuthentication]
    [java.net.http
     HttpClient
     HttpClient$Builder
