@@ -22,7 +22,7 @@ changes.
 Use as a dependency in `deps.edn` or `bb.edn`:
 
 ``` clojure
-org.babashka/http-client {:mvn/version "0.1.6"}
+org.babashka/http-client {:mvn/version "0.3.11"}
 ```
 
 ## Rationale
