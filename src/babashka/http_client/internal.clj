@@ -22,7 +22,7 @@
    [java.time Duration]
    [java.util.concurrent CompletableFuture]
    [java.util.function Function Supplier]
-   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager X509TrustManager]))
+   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager]))
 
 (set! *warn-on-reflection* true)
 
@@ -49,10 +49,27 @@
       (doto (KeyStore/getInstance store-type)
         (.load kss (char-array store-pass))))))
 
-(def insecure-tm (reify X509TrustManager
-                   (checkClientTrusted [_ _ _])
-                   (checkServerTrusted [_ _ _])
-                   (getAcceptedIssuers [_] (into-array X509Certificate []))))
+
+(def has-extended? (resolve 'javax.net.ssl.X509ExtendedTrustManager))
+
+(defmacro if-has-extended [then else]
+  (if has-extended? then else))
+
+(def insecure-tm
+  (delay
+    (if-has-extended
+     (proxy [javax.net.ssl.X509ExtendedTrustManager] []
+       (checkClientTrusted
+         ([_ _])
+         ([_ _ _]))
+       (checkServerTrusted
+         ([_ _])
+         ([_ _ _]))
+       (getAcceptedIssuers [] (into-array X509Certificate [])))
+     (reify javax.net.ssl.X509TrustManager
+       (checkClientTrusted [_ _ _])
+       (checkServerTrusted [_ _ _])
+       (getAcceptedIssuers [_] (into-array X509Certificate []))))))
 
 (defn ->SSLContext
   [v]
@@ -67,7 +84,7 @@
                                             (.init ks (char-array key-store-pass)))))
 
           trust-managers (if insecure
-                           (into-array TrustManager [insecure-tm])
+                           (into-array TrustManager [@insecure-tm])
                            (when-let [ts (load-keystore trust-store trust-store-type trust-store-pass)]
                              (.getTrustManagers (doto (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
                                                   (.init ts)))))]
