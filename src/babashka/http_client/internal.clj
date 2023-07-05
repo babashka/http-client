@@ -49,17 +49,15 @@
       (doto (KeyStore/getInstance store-type)
         (.load kss (char-array store-pass))))))
 
-(defmacro if-bb [then else]
-  (if (System/getProperty "babashka.version")
-    then else))
+
+(def has-extended? (resolve 'javax.net.ssl.X509ExtendedTrustManager))
+
+(defmacro if-has-extended [then else]
+  (if has-extended? then else))
 
 (def insecure-tm
   (delay
-    (if-bb
-     (reify javax.net.ssl.X509TrustManager
-       (checkClientTrusted [_ _ _])
-       (checkServerTrusted [_ _ _])
-       (getAcceptedIssuers [_] (into-array X509Certificate [])))
+    (if-has-extended
      (proxy [javax.net.ssl.X509ExtendedTrustManager] []
        (checkClientTrusted
          ([_ _])
@@ -67,7 +65,11 @@
        (checkServerTrusted
          ([_ _])
          ([_ _ _]))
-       (getAcceptedIssuers [] (into-array X509Certificate []))))))
+       (getAcceptedIssuers [] (into-array X509Certificate [])))
+     (reify javax.net.ssl.X509TrustManager
+       (checkClientTrusted [_ _ _])
+       (checkServerTrusted [_ _ _])
+       (getAcceptedIssuers [_] (into-array X509Certificate []))))))
 
 (defn ->SSLContext
   [v]
