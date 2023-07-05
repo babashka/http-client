@@ -9,8 +9,8 @@
 (defn ->ProxySelector
   "Constructs a `java.net.ProxySelector`.
   Options:
-  * `:host`, string
-  * `:port`, long"
+  * `:host` - string
+  * `:port` - long"
   [opts]
   (i/->ProxySelector opts))
 
@@ -19,13 +19,13 @@
 
   Options:
 
-  * `:key-store` is a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
-  * `:key-store-pass` is the password for the keystore
-  * `:key-store-type` is the type of keystore to create [note: not the type of the file] (default: pkcs12)
-  * `:trust-store` is a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
-  * `:trust-store-pass` is the password for the trust store
-  * `:trust-store-type` is the type of trust store to create [note: not the type of the file] (default: pkcs12)
-  * `:insecure` if `true`, an insecure trust manager accepting all server certificates will be configured.
+  * `:key-store` - a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
+  * `:key-store-pass` - the password for the keystore
+  * `:key-store-type` - the type of keystore to create [note: not the type of the file] (default: pkcs12)
+  * `:trust-store` - a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
+  * `:trust-store-pass` - the password for the trust store
+  * `:trust-store-type` - the type of trust store to create [note: not the type of the file] (default: pkcs12)
+  * `:insecure` - if `true`, an insecure trust manager accepting all server certificates will be configured.
 
   Note that `:keystore` and `:truststore` can be set using the
   `javax.net.ssl.keyStore` and `javax.net.ssl.trustStore` System
@@ -38,8 +38,8 @@
 
   Options:
 
-  * `:user`: the username
-  * `:pass`: the password"
+  * `:user` - the username
+  * `:pass` - the password"
   [opts]
   (i/->Authenticator opts))
 
@@ -51,13 +51,17 @@
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
   * `:executor` - a `java.util.concurrent.Executor`
-  * `:ssl-context`: a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`
-  * `:proxy`: a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`
-  * `:authenticator`: a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
+  * `:ssl-context` - a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`
+  * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' object.
+  * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`
+  * `:authenticator` - a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
+  * `:cookie-handler` - a `java.net.CookieHandler`
+  * `:version` - the HTTP version: `:http1.1` or `:http2`.
+  * `:priority` - priority for HTTP2 requests, integer between 1-256 inclusive
 
   Returns map with:
 
-  * `:client`, a `java.net.http.HttpClient`.
+  * `:client` - a `java.net.http.HttpClient`.
 
   The map can be passed to `request` via the `:client` key.
   "
