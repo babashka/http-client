@@ -22,7 +22,7 @@
    [java.time Duration]
    [java.util.concurrent CompletableFuture]
    [java.util.function Function Supplier]
-   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager X509ExtendedTrustManager #_X509TrustManager]))
+   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager]))
 
 (set! *warn-on-reflection* true)
 
@@ -49,15 +49,25 @@
       (doto (KeyStore/getInstance store-type)
         (.load kss (char-array store-pass))))))
 
-(def insecure-tm (delay
-                   (proxy [X509ExtendedTrustManager] []
-                     (checkClientTrusted
-                       ([_ _])
-                       ([_ _ _]))
-                     (checkServerTrusted
-                       ([_ _])
-                       ([_ _ _]))
-                     (getAcceptedIssuers [] (into-array X509Certificate [])))))
+(defmacro if-bb [then else]
+  (if (System/getProperty "babashka.version")
+    then else))
+
+(def insecure-tm
+  (delay
+    (if-bb
+     (reify javax.net.ssl.X509TrustManager
+       (checkClientTrusted [_ _ _])
+       (checkServerTrusted [_ _ _])
+       (getAcceptedIssuers [_] (into-array X509Certificate [])))
+     (proxy [javax.net.ssl.X509ExtendedTrustManager] []
+       (checkClientTrusted
+         ([_ _])
+         ([_ _ _]))
+       (checkServerTrusted
+         ([_ _])
+         ([_ _ _]))
+       (getAcceptedIssuers [] (into-array X509Certificate []))))))
 
 (defn ->SSLContext
   [v]
