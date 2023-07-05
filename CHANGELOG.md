@@ -5,6 +5,7 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 ## Unreleased
 
 - The `:ssl-context {:insecure true}` option is made more accepting, see babashka issue [#1587](https://github.com/babashka/babashka/issues/1587)
+- Documentation updates for missing parameters and functions
 
 ## 0.3.11
 
