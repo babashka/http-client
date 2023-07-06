@@ -127,6 +127,19 @@
                        java.net.CookiePolicy/ACCEPT_NONE))]
         (java.net.CookieManager. store policy)))))
 
+(defn ->SSLParameters
+  [v]
+  (when v
+    (if (instance? javax.net.ssl.SSLParameters v)
+      v
+      (let [{:keys [ciphers protocols]} v
+            params (javax.net.ssl.SSLParameters.)]
+        (when (not-empty ciphers)
+          (.setCipherSuites params (into-array String ciphers)))
+        (when (not-empty protocols)
+          (.setProtocols params (into-array String protocols)))
+        params))))
+
 (defn client-builder
   (^HttpClient$Builder []
    (client-builder {}))
@@ -150,7 +163,7 @@
        authenticator (.authenticator (->Authenticator authenticator))
        proxy (.proxy (->ProxySelector proxy))
        ssl-context (.sslContext (->SSLContext ssl-context))
-       ssl-parameters (.sslParameters ssl-parameters)
+       ssl-parameters (.sslParameters (->SSLParameters ssl-parameters))
        version (.version (version-keyword->version-enum version))))))
 
 (defn client

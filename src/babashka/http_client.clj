@@ -53,6 +53,16 @@
   [opts]
   (i/->CookieHandler opts))
 
+(defn ->SSLParameters
+  "Constructs a `javax.net.ssl.SSLParameters`.
+   
+   Options:
+   
+   * `:ciphers` - a list of cipher suite names
+   * `:protocols` - a list of protocol names"
+  [opts]
+  (i/->SSLParameters opts))
+
 (defn client
   "Construct a custom client. To get the same behavior as the (implicit) default client, pass `default-client-opts`.
 
@@ -60,14 +70,14 @@
   * `:follow-redirects` - `:never`, `:always` or `:normal`
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
-  * `:executor` - a `java.util.concurrent.Executor`
-  * `:ssl-context` - a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`
-  * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' object.
-  * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`
+  * `:executor` - a `java.util.concurrent.Executor`.
+  * `:ssl-context` - a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`.
+  * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' or a map of options, see docstring of `->SSLParameters`.
+  * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`.
   * `:authenticator` - a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
-  * `:cookie-handler` - a `java.net.CookieHandler` or a map of options, see docstring of `->CookieHandler`
+  * `:cookie-handler` - a `java.net.CookieHandler` or a map of options, see docstring of `->CookieHandler`.
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
-  * `:priority` - priority for HTTP2 requests, integer between 1-256 inclusive
+  * `:priority` - priority for HTTP2 requests, integer between 1-256 inclusive.
 
   Returns map with:
 

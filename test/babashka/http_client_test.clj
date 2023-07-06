@@ -456,6 +456,26 @@
         (.put ch test-uri test-headers)
         (is (zero? (count (.. ch getCookieStore getCookies))))))))
 
+(deftest ssl-parameters-test
+  (is (nil? (http/->SSLParameters nil)))
+  (let [params (http/->SSLParameters {:ciphers []
+                                      :protocols []})]
+    (is (and (instance? javax.net.ssl.SSLParameters params)
+             (nil? (.getCipherSuites params))
+             (nil? (.getProtocols params)))))
+  (let [params (http/->SSLParameters {:ciphers ["SSL_NULL_WITH_NULL_NULL"]})]
+    (is (and (instance? javax.net.ssl.SSLParameters params)
+             (= (first (.getCipherSuites params)) "SSL_NULL_WITH_NULL_NULL"))))
+  (let [params (http/->SSLParameters {:protocols ["TLSv1"]})]
+    (is (and (instance? javax.net.ssl.SSLParameters params)
+             (= (first (.getProtocols params)) "TLSv1"))))
+  (let [params-from-opts (http/->SSLParameters {:ciphers ["SSL_NULL_WITH_NULL_NULL"]
+                                                :protocols ["TLSv1"]})
+        params-from-params (http/->SSLParameters params-from-opts)]
+    (is (and (instance? javax.net.ssl.SSLParameters params-from-params)
+             (= (first (.getCipherSuites params-from-params)) "SSL_NULL_WITH_NULL_NULL")
+             (= (first (.getProtocols params-from-params)) "TLSv1")))))
+
 (comment
   (run-server)
   (stop-server))
