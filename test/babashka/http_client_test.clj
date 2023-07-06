@@ -476,6 +476,17 @@
              (= (first (.getCipherSuites params-from-params)) "SSL_NULL_WITH_NULL_NULL")
              (= (first (.getProtocols params-from-params)) "TLSv1")))))
 
+(deftest executor-test
+  (testing "nil passthrough"
+    (is nil? (http/->Executor nil)))
+  (testing "Executor passthrough"
+    (let [ex (java.util.concurrent.Executors/newSingleThreadExecutor)]
+      (is (= ex (http/->Executor ex)))))
+  (testing "Missing or invalid opts yield nil"
+    (is nil? (http/->Executor {}))
+    (is nil? (http/->Executor {:threads -1})))
+  (is (instance? java.util.concurrent.ThreadPoolExecutor (http/->Executor {:threads 2}))))
+
 (comment
   (run-server)
   (stop-server))

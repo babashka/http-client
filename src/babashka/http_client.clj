@@ -63,6 +63,15 @@
   [opts]
   (i/->SSLParameters opts))
 
+(defn ->Executor
+  "Constructs a `java.util.concurrent.Executor`.
+   
+   Options:
+   
+   * `:threads` - constructs a `ThreadPoolExecutor` with the specified number of threads"
+  [opts]
+  (i/->Executor opts))
+
 (defn client
   "Construct a custom client. To get the same behavior as the (implicit) default client, pass `default-client-opts`.
 
@@ -70,7 +79,7 @@
   * `:follow-redirects` - `:never`, `:always` or `:normal`
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
-  * `:executor` - a `java.util.concurrent.Executor`.
+  * `:executor` - a `java.util.concurrent.Executor` or a map of options, see docstring of `->Executor`
   * `:ssl-context` - a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`.
   * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' or a map of options, see docstring of `->SSLParameters`.
   * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`.

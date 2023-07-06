@@ -140,6 +140,14 @@
           (.setProtocols params (into-array String protocols)))
         params))))
 
+(defn ->Executor
+  [v]
+  (when v
+    (if (instance? java.util.concurrent.Executor v)
+      v
+      (when (pos-int? (:threads v))
+        (java.util.concurrent.Executors/newFixedThreadPool (:threads v))))))
+
 (defn client-builder
   (^HttpClient$Builder []
    (client-builder {}))
@@ -157,7 +165,7 @@
      (cond-> (HttpClient/newBuilder)
        connect-timeout (.connectTimeout (->timeout connect-timeout))
        cookie-handler (.cookieHandler (->CookieHandler cookie-handler))
-       executor (.executor executor)
+       executor (.executor (->Executor executor))
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)
        authenticator (.authenticator (->Authenticator authenticator))
