@@ -2,11 +2,13 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.4.12
 
-- The `:ssl-context {:insecure true}` option is made more accepting, see babashka issue [#1587](https://github.com/babashka/babashka/issues/1587)
+- Add `babashka.http-client.websocket` API (mostly based on hato, thanks [@gnarroway](https://github.com/gnarroway))
+- The `:ssl-context {:insecure true}` option was made more accepting, see babashka issue [#1587](https://github.com/babashka/babashka/issues/1587)
 - [#32](https://github.com/babashka/http-client/issues/32): Documentation updates for missing parameters and functions
 - [#34](https://github.com/babashka/http-client/issues/34): add construction helpers for `:cookie-handler`, `:ssl-parameters`, and `:executor`
+
 ## 0.3.11
 
 - Fix [#28](https://github.com/babashka/http-client/issues/28): add `:authenticator` option
