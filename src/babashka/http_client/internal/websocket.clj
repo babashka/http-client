@@ -84,7 +84,7 @@
       connect-timeout (.connectTimeout (Duration/ofMillis connect-timeout))
       (seq subprotocols) (.subprotocols (first subprotocols) (into-array String (rest subprotocols)))
       headers (with-headers headers)
-      true (.buildAsync (URI/create (aux/->uri uri)) listener)
+      true (.buildAsync (aux/->uri uri) listener)
       (not async) deref)))
 
 (defn ->buffer ^java.nio.ByteBuffer [x]

@@ -2,15 +2,15 @@
   {:no-doc true})
 
 (defn ->uri [uri]
-  (cond (string? uri) uri
+  (cond (string? uri) (java.net.URI/create uri)
         (map? uri)
-        (str (java.net.URI. ^String (:scheme uri)
-                            ^String (:user uri)
-                            ^String (:host uri)
-                            ^Integer (:port uri)
-                            ^String (:path uri)
-                            ^String (:query uri)
-                            ^String (:fragment uri)))
+        (java.net.URI. ^String (:scheme uri)
+                       ^String (:user uri)
+                       ^String (:host uri)
+                       ^Integer (:port uri)
+                       ^String (:path uri)
+                       ^String (:query uri)
+                       ^String (:fragment uri))
         :else uri))
 
 (defn coerce-key
