@@ -3,9 +3,8 @@
   (:refer-clojure :exclude [send get])
   (:require
    [babashka.http-client.interceptors :as interceptors]
-   [babashka.http-client.internal.version :as iv]
-   [clojure.string :as str]
    [babashka.http-client.internal.helpers :as aux]
+   [babashka.http-client.internal.version :as iv]
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
@@ -23,9 +22,9 @@
    [java.security KeyStore SecureRandom]
    [java.security.cert X509Certificate]
    [java.time Duration]
-   [java.util.function Supplier]
    [java.util.concurrent CompletableFuture]
    [java.util.function Function Supplier]
+   [java.util.function Supplier]
    [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager]))
 
 (set! *warn-on-reflection* true)
@@ -116,6 +115,42 @@
           (getPasswordAuthentication []
             (PasswordAuthentication. user (char-array pass))))))))
 
+(defn ->CookieHandler
+  [v]
+  (when v
+    (if (instance? java.net.CookieHandler v)
+      v
+      (let [{:keys [store policy]} v
+            policy (if (instance? java.net.CookiePolicy policy)
+                     policy
+                     (case policy
+                       :accept-all java.net.CookiePolicy/ACCEPT_ALL
+                       :accept-none java.net.CookiePolicy/ACCEPT_NONE
+                       :original-server java.net.CookiePolicy/ACCEPT_ORIGINAL_SERVER
+                       java.net.CookiePolicy/ACCEPT_NONE))]
+        (java.net.CookieManager. store policy)))))
+
+(defn ->SSLParameters
+  [v]
+  (when v
+    (if (instance? javax.net.ssl.SSLParameters v)
+      v
+      (let [{:keys [ciphers protocols]} v
+            params (javax.net.ssl.SSLParameters.)]
+        (when (seq ciphers)
+          (.setCipherSuites params (into-array String ciphers)))
+        (when (seq protocols)
+          (.setProtocols params (into-array String protocols)))
+        params))))
+
+(defn ->Executor
+  [v]
+  (when v
+    (if (instance? java.util.concurrent.Executor v)
+      v
+      (when (pos-int? (:threads v))
+        (java.util.concurrent.Executors/newFixedThreadPool (:threads v))))))
+
 (defn client-builder
   (^HttpClient$Builder []
    (client-builder {}))
@@ -132,14 +167,14 @@
                  version]} opts]
      (cond-> (HttpClient/newBuilder)
        connect-timeout (.connectTimeout (->timeout connect-timeout))
-       cookie-handler (.cookieHandler cookie-handler)
-       executor (.executor executor)
+       cookie-handler (.cookieHandler (->CookieHandler cookie-handler))
+       executor (.executor (->Executor executor))
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)
        authenticator (.authenticator (->Authenticator authenticator))
        proxy (.proxy (->ProxySelector proxy))
        ssl-context (.sslContext (->SSLContext ssl-context))
-       ssl-parameters (.sslParameters ssl-parameters)
+       ssl-parameters (.sslParameters (->SSLParameters ssl-parameters))
        version (.version (version-keyword->version-enum version))))))
 
 (defn client
@@ -216,11 +251,11 @@
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
 
-      (seq headers)            (.headers (into-array String (aux/coerce-headers headers)))
-      method                   (.method (method-keyword->str method) (->body-publisher body))
-      timeout                  (.timeout (->timeout timeout))
-      uri                      (.uri ^URI uri)
-      version                  (.version (version-keyword->version-enum version)))))
+      (seq headers) (.headers (into-array String (aux/coerce-headers headers)))
+      method (.method (method-keyword->str method) (->body-publisher body))
+      timeout (.timeout (->timeout timeout))
+      uri (.uri ^URI uri)
+      version (.version (version-keyword->version-enum version)))))
 
 (defn- apply-interceptors [init interceptors k]
   (reduce (fn [acc i]

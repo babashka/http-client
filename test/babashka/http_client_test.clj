@@ -426,6 +426,67 @@
                  (http/->ProxySelector {:host "https://clojure.org"
                                         :port 1337}))))
 
+(deftest cookie-handler-test
+  (testing "nil passthrough"
+    (is (nil? (http/->CookieHandler nil))))
+  (testing "CookiePolicy passthrough"
+    (is (instance? java.net.CookieHandler (http/->CookieHandler {:policy java.net.CookiePolicy/ACCEPT_ORIGINAL_SERVER}))))
+  (testing "CookieHandler passthrough"
+    (is (instance? java.net.CookieHandler (http/->CookieHandler (http/->CookieHandler {:policy :accept-all})))))
+  (let [test-uri (java.net.URI. "http://test.test")
+        test-headers {"Set-Cookie" ["Test=Value; Domain=.test.test" "Test2=Value2; Domain=.not.test"]}]
+    (testing ":original-server keyword policy"
+      (let [ch (http/->CookieHandler {:policy :original-server})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (= 1 (count (.. ch getCookieStore getCookies))))))
+    (testing ":accept-all keyword policy"
+      (let [ch (http/->CookieHandler {:policy :accept-all})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (= 2 (count (.. ch getCookieStore getCookies))))))
+    (testing ":accept-none keyword policy"
+      (let [ch (http/->CookieHandler {:policy :accept-none})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (zero? (count (.. ch getCookieStore getCookies))))))
+    (testing "default should :accept-none"
+      (let [ch (http/->CookieHandler {})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (zero? (count (.. ch getCookieStore getCookies))))))))
+
+(deftest ssl-parameters-test
+  (is (nil? (http/->SSLParameters nil)))
+  (let [params (http/->SSLParameters {:ciphers []
+                                      :protocols []})]
+    (is (and (instance? javax.net.ssl.SSLParameters params)
+             (nil? (.getCipherSuites params))
+             (nil? (.getProtocols params)))))
+  (let [params (http/->SSLParameters {:ciphers ["SSL_NULL_WITH_NULL_NULL"]})]
+    (is (and (instance? javax.net.ssl.SSLParameters params)
+             (= (first (.getCipherSuites params)) "SSL_NULL_WITH_NULL_NULL"))))
+  (let [params (http/->SSLParameters {:protocols ["TLSv1"]})]
+    (is (and (instance? javax.net.ssl.SSLParameters params)
+             (= (first (.getProtocols params)) "TLSv1"))))
+  (let [params-from-opts (http/->SSLParameters {:ciphers ["SSL_NULL_WITH_NULL_NULL"]
+                                                :protocols ["TLSv1"]})
+        params-from-params (http/->SSLParameters params-from-opts)]
+    (is (and (instance? javax.net.ssl.SSLParameters params-from-params)
+             (= (first (.getCipherSuites params-from-params)) "SSL_NULL_WITH_NULL_NULL")
+             (= (first (.getProtocols params-from-params)) "TLSv1")))))
+
+(deftest executor-test
+  (testing "nil passthrough"
+    (is nil? (http/->Executor nil)))
+  (testing "Executor passthrough"
+    (let [ex (java.util.concurrent.Executors/newSingleThreadExecutor)]
+      (is (= ex (http/->Executor ex)))))
+  (testing "Missing or invalid opts yield nil"
+    (is nil? (http/->Executor {}))
+    (is nil? (http/->Executor {:threads -1})))
+  (is (instance? java.util.concurrent.ThreadPoolExecutor (http/->Executor {:threads 2}))))
+
 (comment
   (run-server)
   (stop-server))
