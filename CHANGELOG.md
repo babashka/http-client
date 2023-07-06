@@ -6,8 +6,8 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 
 - Add `babashka.http-client.websocket` API (mostly based on hato, thanks [@gnarroway](https://github.com/gnarroway)). See [API docs](https://github.com/babashka/http-client/blob/main/API.md#babashka.http-client.websocket).
 - The `:ssl-context {:insecure true}` option was made more accepting, see babashka issue [#1587](https://github.com/babashka/babashka/issues/1587)
-- [#32](https://github.com/babashka/http-client/issues/32): Documentation updates for missing parameters and functions
-- [#34](https://github.com/babashka/http-client/issues/34): add construction helpers for `:cookie-handler`, `:ssl-parameters`, and `:executor`
+- [#32](https://github.com/babashka/http-client/issues/32): Documentation updates for missing parameters and functions ([@casselc](https://github.com/casselc))
+- [#34](https://github.com/babashka/http-client/issues/34): add construction helpers for `:cookie-handler`, `:ssl-parameters`, and `:executor` ([@casselc](https://github.com/casselc))
 
 ## 0.3.11
 
