@@ -6,8 +6,7 @@
    [babashka.http-client.internal.version :as iv]
    [clojure.string :as str]
    [babashka.http-client.internal.helpers :as aux]
-   [clojure.java.io :as io]
-   [clojure.string :as str])
+   [clojure.java.io :as io])
   (:import
    [java.net URI URLEncoder Authenticator PasswordAuthentication]
    [java.net.http
@@ -138,9 +137,9 @@
       v
       (let [{:keys [ciphers protocols]} v
             params (javax.net.ssl.SSLParameters.)]
-        (when (not-empty ciphers)
+        (when (seq ciphers)
           (.setCipherSuites params (into-array String ciphers)))
-        (when (not-empty protocols)
+        (when (seq protocols)
           (.setProtocols params (into-array String protocols)))
         params))))
 
