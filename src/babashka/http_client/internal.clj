@@ -112,6 +112,21 @@
           (getPasswordAuthentication []
             (PasswordAuthentication. user (char-array pass))))))))
 
+(defn ->CookieHandler
+  [v]
+  (when v
+    (if (instance? java.net.CookieHandler v)
+      v
+      (let [{:keys [store policy]} v
+            policy (if (instance? java.net.CookiePolicy policy)
+                     policy
+                     (case policy
+                       :accept-all java.net.CookiePolicy/ACCEPT_ALL
+                       :accept-none java.net.CookiePolicy/ACCEPT_NONE
+                       :original-server java.net.CookiePolicy/ACCEPT_ORIGINAL_SERVER
+                       java.net.CookiePolicy/ACCEPT_NONE))]
+        (java.net.CookieManager. store policy)))))
+
 (defn client-builder
   (^HttpClient$Builder []
    (client-builder {}))
@@ -128,7 +143,7 @@
                  version]} opts]
      (cond-> (HttpClient/newBuilder)
        connect-timeout (.connectTimeout (->timeout connect-timeout))
-       cookie-handler (.cookieHandler cookie-handler)
+       cookie-handler (.cookieHandler (->CookieHandler cookie-handler))
        executor (.executor executor)
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)

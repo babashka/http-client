@@ -426,6 +426,36 @@
                  (http/->ProxySelector {:host "https://clojure.org"
                                         :port 1337}))))
 
+(deftest cookie-handler-test
+  (testing "nil passthrough"
+    (is (nil? (http/->CookieHandler nil))))
+  (testing "CookiePolicy passthrough"
+    (is (instance? java.net.CookieHandler (http/->CookieHandler {:policy java.net.CookiePolicy/ACCEPT_ORIGINAL_SERVER}))))
+  (testing "CookieHandler passthrough"
+    (is (instance? java.net.CookieHandler (http/->CookieHandler (http/->CookieHandler {:policy :accept-all})))))
+  (let [test-uri (java.net.URI. "http://test.test")
+        test-headers {"Set-Cookie" ["Test=Value; Domain=.test.test" "Test2=Value2; Domain=.not.test"]}]
+    (testing ":original-server keyword policy"
+      (let [ch (http/->CookieHandler {:policy :original-server})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (= 1 (count (.. ch getCookieStore getCookies))))))
+    (testing ":accept-all keyword policy"
+      (let [ch (http/->CookieHandler {:policy :accept-all})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (= 2 (count (.. ch getCookieStore getCookies))))))
+    (testing ":accept-none keyword policy"
+      (let [ch (http/->CookieHandler {:policy :accept-none})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (zero? (count (.. ch getCookieStore getCookies))))))
+    (testing "default should :accept-none"
+      (let [ch (http/->CookieHandler {})]
+        (is (instance? java.net.CookieHandler ch))
+        (.put ch test-uri test-headers)
+        (is (zero? (count (.. ch getCookieStore getCookies))))))))
+
 (comment
   (run-server)
   (stop-server))

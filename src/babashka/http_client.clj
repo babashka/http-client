@@ -43,6 +43,16 @@
   [opts]
   (i/->Authenticator opts))
 
+(defn ->CookieHandler
+  "Constructs a `java.net.CookieHandler` using `java.net.CookieManager`.
+  
+    Options:
+  
+    * `:store` - an optional `java.net.CookieStore` implementation
+    * `:policy` - a `java.net.CookiePolicy` or one of `:accept-all`, `:accept-none`, `:original-server`"
+  [opts]
+  (i/->CookieHandler opts))
+
 (defn client
   "Construct a custom client. To get the same behavior as the (implicit) default client, pass `default-client-opts`.
 
@@ -55,7 +65,7 @@
   * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' object.
   * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`
   * `:authenticator` - a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
-  * `:cookie-handler` - a `java.net.CookieHandler`
+  * `:cookie-handler` - a `java.net.CookieHandler` or a map of options, see docstring of `->CookieHandler`
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
   * `:priority` - priority for HTTP2 requests, integer between 1-256 inclusive
 
