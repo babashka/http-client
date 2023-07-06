@@ -1,9 +1,10 @@
 (ns babashka.http-client.interceptors
   (:refer-clojure :exclude [send get])
   (:require
+   [babashka.http-client.internal.multipart :as multipart]
+   [babashka.http-client.internal.helpers :as aux]
    [clojure.java.io :as io]
-   [clojure.string :as str]
-   [babashka.http-client.internal.multipart :as multipart])
+   [clojure.string :as str])
   (:import
    [java.net URLEncoder]
    [java.util Base64]
@@ -183,16 +184,7 @@
   {:name ::construct-uri
    :request (fn [req]
               (let [uri (:uri req)
-                    uri (cond (string? uri) (java.net.URI/create uri)
-                              (map? uri)
-                              (java.net.URI. ^String (:scheme uri)
-                                             ^String (:user uri)
-                                             ^String (:host uri)
-                                             ^Integer (:port uri)
-                                             ^String (:path uri)
-                                             ^String (:query uri)
-                                             ^String (:fragment uri))
-                              :else uri)]
+                    uri (aux/->uri uri)]
                 (assoc req :uri uri)))})
 
 (def unexceptional-statuses

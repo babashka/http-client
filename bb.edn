@@ -8,12 +8,14 @@
            :task cognitect.test-runner/-main}
 
   quickdoc {:doc "Invoke quickdoc"
-            :extra-deps {io.github.borkdude/quickdoc {:git/sha "1e810ddd08ee724ff5736530a35a989d0ecdc9de"}}
+            :extra-deps {io.github.borkdude/quickdoc
+                         {:git/sha "e4f08eb5b1882cf0bffcbb7370699c0a63c9fd72"}}
             :task (exec 'quickdoc.api/quickdoc)
             :exec-args {:git/branch "main"
                         :github/repo "https://github.com/babashka/http-client"
                         :source-paths ["src/babashka/http_client.clj"
-                                       "src/babashka/http_client/interceptors.clj"]}}
+                                       "src/babashka/http_client/interceptors.clj"
+                                       "src/babashka/http_client/websocket.clj"]}}
   refresh-version {:requires ([babashka.fs :as fs]
                               [clojure.string :as str])
                    :task (let [version (-> (slurp "deps.edn")
