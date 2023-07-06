@@ -3,10 +3,10 @@
   (:refer-clojure :exclude [send get])
   (:require
    [babashka.http-client.interceptors :as interceptors]
-   [babashka.http-client.internal.version :as iv]
-   [clojure.string :as str]
    [babashka.http-client.internal.helpers :as aux]
-   [clojure.java.io :as io])
+   [babashka.http-client.internal.version :as iv]
+   [clojure.java.io :as io]
+   [clojure.string :as str])
   (:import
    [java.net URI URLEncoder Authenticator PasswordAuthentication]
    [java.net.http
@@ -22,9 +22,9 @@
    [java.security KeyStore SecureRandom]
    [java.security.cert X509Certificate]
    [java.time Duration]
-   [java.util.function Supplier]
    [java.util.concurrent CompletableFuture]
    [java.util.function Function Supplier]
+   [java.util.function Supplier]
    [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager]))
 
 (set! *warn-on-reflection* true)
@@ -251,11 +251,11 @@
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
 
-      (seq headers)            (.headers (into-array String (aux/coerce-headers headers)))
-      method                   (.method (method-keyword->str method) (->body-publisher body))
-      timeout                  (.timeout (->timeout timeout))
-      uri                      (.uri ^URI uri)
-      version                  (.version (version-keyword->version-enum version)))))
+      (seq headers) (.headers (into-array String (aux/coerce-headers headers)))
+      method (.method (method-keyword->str method) (->body-publisher body))
+      timeout (.timeout (->timeout timeout))
+      uri (.uri ^URI uri)
+      version (.version (version-keyword->version-enum version)))))
 
 (defn- apply-interceptors [init interceptors k]
   (reduce (fn [acc i]
