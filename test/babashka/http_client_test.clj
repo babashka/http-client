@@ -1,12 +1,54 @@
 (ns babashka.http-client-test
   (:require
+   [babashka.fs :as fs]
    [babashka.http-client.internal.version :as iv]
+   [borkdude.deflet :refer [deflet]]
    [cheshire.core :as json]
    [clojure.java.io :as io]
    [clojure.string :as str]
-   [clojure.test :refer [deftest is testing]])
+   [clojure.test :refer [deftest is testing]]
+   [org.httpkit.server :as server]
+   [babashka.http-client :as http])
   (:import
-   (clojure.lang ExceptionInfo)))
+   [clojure.lang ExceptionInfo]
+   [javax.net.ssl SSLContext]))
+
+(def !server (atom nil))
+
+(defn run-server []
+  (let [server
+        (server/run-server
+         (fn [{:keys [uri body] :as req}]
+           (let [status (parse-long (subs uri 1))
+                 json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
+             (case status
+               200 (let [body (if json?
+                                (json/generate-string {:code 200})
+                                (if body body
+                                    "200 OK"))]
+                     {:status 200
+                      :body body})
+               404 {:status 404
+                    :body "404 Not Found"}
+               302 {:status 302
+                    :headers {"location" "/200"}}
+               {:status status
+                :body (str status)})))
+         {:port 12233
+          :legacy-return-value? false})]
+    (reset! !server server)))
+
+(defn stop-server []
+  (server/server-stop! @!server))
+
+(defn my-test-fixture [f]
+  (println "Spinning up server")
+  (run-server)
+  (f)
+  (println "Tearing down server")
+  (stop-server))
+
+(clojure.test/use-fixtures :once my-test-fixture)
 
 ;; reload client so we're not testing the built-in namespace in bb
 
@@ -18,10 +60,10 @@
   (println))
 
 (deftest get-test
-  (is (str/includes? (:body (http/get "https://httpstat.us/200"))
+  (is (str/includes? (:body (http/get "http://localhost:12233/200"))
                      "200"))
   (is (= 200
-         (-> (http/get "https://httpstat.us/200"
+         (-> (http/get "http://localhost:12233/200"
                        {:headers {"Accept" "application/json"}})
              :body
              (json/parse-string true)
@@ -36,7 +78,14 @@
            (-> (http/get "https://postman-echo.com/get" {:query-params {"foo1" ["bar1" "bar2"]}})
                :body
                (json/parse-string true)
-               :args)))))
+               :args))))
+  (testing "can pass uri"
+    (is (= 200
+           (-> (http/get (java.net.URI. "http://localhost:12233/200")
+                         {:headers {"Accept" "application/json"}})
+               :body
+               (json/parse-string true)
+               :code)))))
 
 (deftest delete-test
   (is (= 200 (:status (http/delete "https://postman-echo.com/delete")))))
@@ -54,11 +103,21 @@
        (:body (http/post "https://postman-echo.com/post"
                          {:body "From Clojure"}))
        "From Clojure"))
-  (testing "file body"
+  (testing "text file body"
     (is (str/includes?
          (:body (http/post "https://postman-echo.com/post"
                            {:body (io/file "README.md")}))
          "babashka")))
+  (testing "binary file body"
+    (let [file-bytes (fs/read-all-bytes (io/file "icon.png"))
+          body1 (:body (http/post "http://localhost:12233/200"
+                                  {:body (io/file "icon.png")
+                                   :as :bytes}))
+          body2 (:body (http/post "http://localhost:12233/200"
+                                  {:body (fs/path "icon.png")
+                                   :as :bytes}))]
+      (is (java.util.Arrays/equals file-bytes body1))
+      (is (java.util.Arrays/equals file-bytes body2))))
   (testing "JSON body"
     (let [response (http/post "https://postman-echo.com/post"
                               {:headers {"Content-Type" "application/json"}
@@ -109,7 +168,7 @@
 (deftest put-test
   (is (str/includes?
        (:body (http/put "https://postman-echo.com/put"
-                          {:body "hello"}))
+                        {:body "hello"}))
        "hello")))
 
 (deftest basic-auth-test
@@ -119,14 +178,14 @@
                           {:basic-auth ["postman" "password"]})))))
 
 (deftest get-response-object-test
-  (let [response (http/get "https://httpstat.us/200")]
+  (let [response (http/get "http://localhost:12233/200")]
     (is (map? response))
     (is (= 200 (:status response)))
     (is (= "200 OK" (:body response)))
     (is (string? (get-in response [:headers "server"]))))
 
   (testing "response object as stream"
-    (let [response (http/get "https://httpstat.us/200" {:as :stream})]
+    (let [response (http/get "http://localhost:12233/200" {:as :stream})]
       (is (map? response))
       (is (= 200 (:status response)))
       (is (instance? java.io.InputStream (:body response)))
@@ -149,7 +208,7 @@
 
 (deftest accept-header-test
   (is (= 200
-         (-> (http/get "https://httpstat.us/200"
+         (-> (http/get "http://localhost:12233/200"
                        {:accept :json})
              :body
              (json/parse-string true)
@@ -162,16 +221,13 @@
              (json/parse-string)
              (get "args")))))
 
-;; (deftest low-level-url-test
-;;   (let [response (-> (client/request {:url {:scheme "https"
-;;                                           :host   "httpbin.org"
-;;                                           :port   443
-;;                                           :path   "/get"
-;;                                           :query  "q=test"}})
-;;                      :body
-;;                      (json/parse-string true))]
-;;     (is (= {:q "test"} (:args response)))
-;;     (is (= "httpbin.org" (get-in response [:headers :Host])))))
+(deftest request-uri-test
+  (is (= 200 (:status (http/head "http://localhost:12233/200"))))
+  (is (= 200 (:status (http/head {:scheme "http"
+                                  :host "localhost"
+                                  :port 12233
+                                  :path "/200"}))))
+  (is (= 200 (:status (http/head (java.net.URI. "http://localhost:12233/200"))))))
 
 ;; (deftest download-binary-file-as-stream-test
 ;;   (testing "download image"
@@ -235,17 +291,17 @@
 
 (deftest exceptional-status-test
   (testing "should throw"
-    (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404")))
+    (let [ex (is (thrown? ExceptionInfo (http/get "http://localhost:12233/404")))
           response (ex-data ex)]
       (is (= 404 (:status response)))))
   (testing "should throw when streaming based on status code"
-    (let [ex (is (thrown? ExceptionInfo (http/get "https://httpstat.us/404" {:throw true
-                                                                             :as :stream})))
+    (let [ex (is (thrown? ExceptionInfo (http/get "http://localhost:12233/404" {:throw true
+                                                                                :as :stream})))
           response (ex-data ex)]
       (is (= 404 (:status response)))
       (is (= "404 Not Found" (slurp (:body response))))))
   (testing "should not throw"
-    (let [response (http/get "https://httpstat.us/404" {:throw false})]
+    (let [response (http/get "http://localhost:12233/404" {:throw false})]
       (is (= 404 (:status response))))))
 
 (deftest compressed-test
@@ -273,7 +329,7 @@
 
 (deftest header-with-keyword-key-test
   (is (= 200
-         (-> (http/get "https://httpstat.us/200"
+         (-> (http/get "http://localhost:12233/200"
                        {:headers {:accept "application/json"}})
              :body
              (json/parse-string true)
@@ -281,10 +337,10 @@
 
 (deftest follow-redirects-test
   (testing "default behaviour of following redirects automatically"
-    (is (= 200 (:status (http/get "https://httpstat.us/302")))))
+    (is (= 200 (:status (http/get "http://localhost:12233/302")))))
 
   (testing "follow redirects set to false"
-    (is (= 302 (:status (http/get "https://httpstat.us/302" {:client (http/client {:follow-redirects false})}))))))
+    (is (= 302 (:status (http/get "http://localhost:12233/302" {:client (http/client {:follow-redirects false})}))))))
 
 (deftest interceptor-test
   (let [json-interceptor
@@ -307,8 +363,17 @@
         ;; It will be the first to see the request and the last to see the response
         interceptors (cons json-interceptor interceptors/default-interceptors)]
     (testing "interceptors on request"
-      (let [resp (http/get "https://httpstat.us/200"
+      (let [resp (http/get "http://localhost:12233/200"
                            {:interceptors interceptors
+                            :as :json})]
+        (is (= 200 (-> resp :body
+                       ;; response as JSON
+                       :code)))))
+    (testing "interceptors on client"
+      (let [client (http/client (assoc-in http/default-client-opts
+                                          [:request :interceptors] interceptors))
+            resp (http/get "http://localhost:12233/200"
+                           {:client client
                             :as :json})]
         (is (= 200 (-> resp :body
                        ;; response as JSON
@@ -329,3 +394,38 @@
     (is (str/starts-with? (:content-type headers) "multipart/form-data; boundary=babashka_http_client_Boundary"))
     (is (some? (:dude (:files resp-body))))
     (is (= "My Awesome Picture" (-> resp-body :form :title)))))
+
+(deftest async-test
+  (deflet
+    (def async-resp (http/get "http://localhost:12233/200" {:async true}))
+    (is (instance? java.util.concurrent.CompletableFuture async-resp))
+    (is (= 200 (:status @async-resp)))
+    (def async-resp (http/get "http://localhost:12233/200" {:async true
+                                                            :async-then (fn [resp]
+                                                                          (:status resp))}))
+    (is (= 200 @async-resp))
+    (def async-resp (http/get "http://localhost:12233/404" {:async true
+                                                            :async-then (fn [resp]
+                                                                          (:status resp))
+                                                            :async-catch (fn [e]
+                                                                           (:ex-data e))}))
+    (is (= 404 (:status @async-resp)))))
+
+(deftest ssl-context-test
+  ;; keystore was generated with:
+  ;; keytool -keystore keystore.p12 -genkey -alias client -keyalg RSA
+  ;; name: Michiel Borkent
+  (is (not= (SSLContext/getDefault)
+            (.sslContext (:client (http/client {:ssl-context {:key-store "test/keystore.p12"
+                                                              :key-store-pass "bbrocks"
+                                                              :trust-store "test/keystore.p12"
+                                                              :trust-store-pass "bbrocks"}}))))))
+
+(deftest proxy-selector
+  (is (instance? java.net.ProxySelector
+                 (http/->ProxySelector {:host "https://clojure.org"
+                                        :port 1337}))))
+
+(comment
+  (run-server)
+  (stop-server))

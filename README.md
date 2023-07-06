@@ -1,25 +1,28 @@
 # http-client
 
+[![Clojars Project](https://img.shields.io/clojars/v/org.babashka/http-client.svg)](https://clojars.org/org.babashka/http-client)
+[![bb built-in](https://raw.githubusercontent.com/babashka/babashka/master/logo/built-in-badge.svg)](https://babashka.org)
+
 An HTTP client for Clojure and Babashka built on `java.net.http`.
 
 ## API
 
 See [API.md](API.md).
 
-## Status
-
-This library is in flux. Feedback is welcome. It can be used in production, but
-expect breaking changes. When this library is considered stable (API-wise) it
-will be built into babashka.
-
 > NOTE: The `babashka.http-client` library is built-in as of babashka version 1.1.171.
+
+## Stability
+
+The `babashka.http-client` namespace can be considered stable. The
+`babashka.http-client.interceptors` namespace may still undergo some breaking
+changes.
 
 ## Installation
 
 Use as a dependency in `deps.edn` or `bb.edn`:
 
 ``` clojure
-org.babashka/http-client {:mvn/version "0.1.4"}
+org.babashka/http-client {:mvn/version "0.3.11"}
 ```
 
 ## Rationale
@@ -77,6 +80,12 @@ Passing headers:
 (json/parse-string (:body resp)) ;;=> {"code" 200, "description" "OK"}
 ```
 
+Headers may be provided as keywords as well:
+
+``` clojure
+{:headers {:content-type "application/json"}}
+```
+
 ### Query parameters
 
 Query parameters:
@@ -106,6 +115,15 @@ A `POST` request with a `:body`:
 ``` clojure
 (def resp (http/post "https://postman-echo.com/post" {:body "From Clojure"}))
 (json/parse-string (:body resp)) ;;=> {"args" {}, "data" "From Clojure", ...}
+```
+
+A `POST` request with a JSON `:body`:
+
+``` clojure
+(def resp (http/post "https://postman-echo.com/post"
+                     {:headers {:content-type "application/json"}
+                      :body (json/encode {:a 1 :b "2"})}))
+(:data (json/parse-string (:body resp) true)) ;;=> {:a 1, :b "2"}
 ```
 
 Posting a file as a `POST` body:

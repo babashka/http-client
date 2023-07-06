@@ -7,6 +7,43 @@
   "Options used to create the (implicit) default client."
   i/default-client-opts)
 
+(defn ->ProxySelector
+  "Constructs a `java.net.ProxySelector`.
+  Options:
+  * `:host`, string
+  * `:port`, long"
+  [opts]
+  (i/->ProxySelector opts))
+
+(defn ->SSLContext
+  "Constructs a `javax.net.ssl.SSLContext`.
+
+  Options:
+
+  * `:key-store` is a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
+  * `:key-store-pass` is the password for the keystore
+  * `:key-store-type` is the type of keystore to create [note: not the type of the file] (default: pkcs12)
+  * `:trust-store` is a file, URI or URL or anything else that is compatible with `io/input-stream`, e.g. (io/resource somepath.p12)
+  * `:trust-store-pass` is the password for the trust store
+  * `:trust-store-type` is the type of trust store to create [note: not the type of the file] (default: pkcs12)
+  * `:insecure` if `true`, an insecure trust manager accepting all server certificates will be configured.
+
+  Note that `:keystore` and `:truststore` can be set using the
+  `javax.net.ssl.keyStore` and `javax.net.ssl.trustStore` System
+  properties globally."
+  [opts]
+  (i/->SSLContext opts))
+
+(defn ->Authenticator
+  "Constructs a `java.net.Authenticator`.
+
+  Options:
+
+  * `:user`: the username
+  * `:pass`: the password"
+  [opts]
+  (i/->Authenticator opts))
+
 (defn client
   "Construct a custom client. To get the same behavior as the (implicit) default client, pass `default-client-opts`.
 
@@ -14,6 +51,10 @@
   * `:follow-redirects` - `:never`, `:always` or `:normal`
   * `:connect-timeout` - connection timeout in milliseconds.
   * `:request` - default request options which will be used in requests made with this client.
+  * `:executor` - a `java.util.concurrent.Executor`
+  * `:ssl-context`: a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`
+  * `:proxy`: a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`
+  * `:authenticator`: a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
 
   Returns map with:
 
@@ -30,12 +71,18 @@
   Options:
 
   * `:uri` - the uri to request (required).
-     May be a string or map of `:schema` (required), `:host` (required), `:port`, `:path` and `:query`
+     May be a string or map of `:scheme` (required), `:host` (required), `:port`, `:path` and `:query`
   * `:headers` - a map of headers
   * `:method` - the request method: `:get`, `:post`, `:head`, `:delete`, `:patch` or `:put`
   * `:interceptors` - custom interceptor chain
   * `:client` - a client as produced by `client`. If not provided a default client will be used.
+  * `:query-params` - a map of query params. The values can be a list to send multiple params with the same key.
+  * `:form-params` - a map of form params to send in the request body.
+  * `:body` - a file, inputstream or string to send as the request body.
+  * `:basic-auth` - a sequence of `user` `password` or map with `:user` `:pass` used for basic auth.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
+  * `:async-then` - a function that is called on the async result if successful
+  * `:async-catch` - a function that is called on the async result if exceptional
   * `:timeout` - request timeout in milliseconds.
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
   "

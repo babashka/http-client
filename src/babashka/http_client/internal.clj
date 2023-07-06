@@ -5,9 +5,11 @@
    [babashka.http-client.interceptors :as interceptors]
    [babashka.http-client.internal.version :as iv]
    [clojure.string :as str]
-   [babashka.http-client.internal.helpers :as aux])
+   [babashka.http-client.internal.helpers :as aux]
+   [clojure.java.io :as io]
+   [clojure.string :as str])
   (:import
-   [java.net URI URLEncoder]
+   [java.net URI URLEncoder Authenticator PasswordAuthentication]
    [java.net.http
     HttpClient
     HttpClient$Builder
@@ -18,8 +20,13 @@
     HttpRequest$Builder
     HttpResponse
     HttpResponse$BodyHandlers]
+   [java.security KeyStore SecureRandom]
+   [java.security.cert X509Certificate]
    [java.time Duration]
-   [java.util.function Supplier]))
+   [java.util.function Supplier]
+   [java.util.concurrent CompletableFuture]
+   [java.util.function Function Supplier]
+   [javax.net.ssl KeyManagerFactory TrustManagerFactory SSLContext TrustManager]))
 
 (set! *warn-on-reflection* true)
 
@@ -32,12 +39,82 @@
 (defn- version-keyword->version-enum [version]
   (case version
     :http1.1 HttpClient$Version/HTTP_1_1
-    :http2   HttpClient$Version/HTTP_2))
+    :http2 HttpClient$Version/HTTP_2))
 
 (defn ->timeout [t]
   (if (integer? t)
     (Duration/ofMillis t)
     t))
+
+(defn- load-keystore
+  ^KeyStore [store store-type store-pass]
+  (when store
+    (with-open [kss (io/input-stream store)]
+      (doto (KeyStore/getInstance store-type)
+        (.load kss (char-array store-pass))))))
+
+
+(def has-extended? (resolve 'javax.net.ssl.X509ExtendedTrustManager))
+
+(defmacro if-has-extended [then else]
+  (if has-extended? then else))
+
+(def insecure-tm
+  (delay
+    (if-has-extended
+     (proxy [javax.net.ssl.X509ExtendedTrustManager] []
+       (checkClientTrusted
+         ([_ _])
+         ([_ _ _]))
+       (checkServerTrusted
+         ([_ _])
+         ([_ _ _]))
+       (getAcceptedIssuers [] (into-array X509Certificate [])))
+     (reify javax.net.ssl.X509TrustManager
+       (checkClientTrusted [_ _ _])
+       (checkServerTrusted [_ _ _])
+       (getAcceptedIssuers [_] (into-array X509Certificate []))))))
+
+(defn ->SSLContext
+  [v]
+  (if (instance? SSLContext v)
+    v
+    (let [{:keys [key-store key-store-type key-store-pass trust-store trust-store-type trust-store-pass insecure]} v
+          ;; compatibility with hato
+          key-store-type (or key-store-type (:keystore-type v) "pkcs12")
+          trust-store-type (or trust-store-type "pkcs12")
+          key-managers (when-let [ks (load-keystore key-store key-store-type key-store-pass)]
+                         (.getKeyManagers (doto (KeyManagerFactory/getInstance (KeyManagerFactory/getDefaultAlgorithm))
+                                            (.init ks (char-array key-store-pass)))))
+
+          trust-managers (if insecure
+                           (into-array TrustManager [@insecure-tm])
+                           (when-let [ts (load-keystore trust-store trust-store-type trust-store-pass)]
+                             (.getTrustManagers (doto (TrustManagerFactory/getInstance (TrustManagerFactory/getDefaultAlgorithm))
+                                                  (.init ts)))))]
+
+      (doto (SSLContext/getInstance "TLS")
+        (.init key-managers
+               trust-managers
+               (SecureRandom.))))))
+
+(defn ->ProxySelector
+  [opts]
+  (if (instance? java.net.ProxySelector opts)
+    opts
+    (let [{:keys [host port]} opts]
+      (cond (and host port)
+            (java.net.ProxySelector/of (java.net.InetSocketAddress. ^String host ^long port))))))
+
+(defn ->Authenticator
+  [v]
+  (if (instance? Authenticator v)
+    v
+    (let [{:keys [user pass]} v]
+      (when (and user pass)
+        (proxy [Authenticator] []
+          (getPasswordAuthentication []
+            (PasswordAuthentication. user (char-array pass))))))))
 
 (defn client-builder
   (^HttpClient$Builder []
@@ -49,19 +126,21 @@
                  follow-redirects
                  priority
                  proxy
+                 authenticator
                  ssl-context
                  ssl-parameters
                  version]} opts]
      (cond-> (HttpClient/newBuilder)
-       connect-timeout  (.connectTimeout (->timeout connect-timeout))
-       cookie-handler   (.cookieHandler cookie-handler)
-       executor         (.executor executor)
+       connect-timeout (.connectTimeout (->timeout connect-timeout))
+       cookie-handler (.cookieHandler cookie-handler)
+       executor (.executor executor)
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
-       priority         (.priority priority)
-       proxy            (.proxy proxy)
-       ssl-context      (.sslContext ssl-context)
-       ssl-parameters   (.sslParameters ssl-parameters)
-       version          (.version (version-keyword->version-enum version))))))
+       priority (.priority priority)
+       authenticator (.authenticator (->Authenticator authenticator))
+       proxy (.proxy (->ProxySelector proxy))
+       ssl-context (.sslContext (->SSLContext ssl-context))
+       ssl-parameters (.sslParameters ssl-parameters)
+       version (.version (version-keyword->version-enum version))))))
 
 (defn client
   ([opts]
@@ -70,7 +149,7 @@
     :type :babashka.http-client/client}))
 
 (def default-client-opts
-  {:follow-redirects :always
+  {:follow-redirects :normal
    :request {:headers {:accept "*/*"
                        :accept-encoding ["gzip" "deflate"]
                        :user-agent (str "babashka.http-client/" iv/version)}}})
@@ -100,7 +179,12 @@
     (HttpRequest$BodyPublishers/ofByteArray body)
 
     (instance? java.io.File body)
-    (HttpRequest$BodyPublishers/ofString (slurp body))
+    (let [^java.nio.file.Path path (.toPath (io/file body))]
+      (HttpRequest$BodyPublishers/ofFile path))
+
+    (instance? java.nio.file.Path body)
+    (let [^java.nio.file.Path path body]
+      (HttpRequest$BodyPublishers/ofFile path))
 
     :else
     (throw (ex-info (str "Don't know how to convert " (type body) "to body")
@@ -131,6 +215,7 @@
                 body]} opts]
     (cond-> (HttpRequest/newBuilder)
       (some? expect-continue) (.expectContinue expect-continue)
+
       (seq headers)            (.headers (into-array String (aux/coerce-headers headers)))
       method                   (.method (method-keyword->str method) (->body-publisher body))
       timeout                  (.timeout (->timeout timeout))
@@ -151,7 +236,7 @@
 (defn- version-enum->version-keyword [^HttpClient$Version version]
   (case (.name version)
     "HTTP_1_1" :http1.1
-    "HTTP_2"   :http2))
+    "HTTP_2" :http2))
 
 (defn response->map [^HttpResponse resp]
   {:status (.statusCode resp)
@@ -182,21 +267,43 @@
   (let [client (or client @default-client)
         request-defaults (:request client)
         ^HttpClient client (or (:client client) client)
+        req (merge-with merge-opts request-defaults req)
         request-interceptors (or (:interceptors req)
                                  interceptors/default-interceptors)
-        req (merge-with merge-opts request-defaults req)
         req (apply-interceptors req request-interceptors :request)
         req' (ring->HttpRequest req)
-        resp (if (:async req)
+        async (:async req)
+        resp (if async
                (.sendAsync client req' (HttpResponse$BodyHandlers/ofInputStream))
                (.send client req' (HttpResponse$BodyHandlers/ofInputStream)))]
     (if raw resp
         (let [resp (then resp response->map)
               resp (then resp (fn [resp]
-                                (assoc resp :request req)))]
-          (reduce (fn [resp interceptor]
-                    (if-let [f (:response interceptor)]
-                      (then resp f)
-                      resp))
-                  resp (reverse (or (:interceptors req)
-                                    interceptors/default-interceptors)))))))
+                                (assoc resp :request req)))
+              resp (reduce (fn [resp interceptor]
+                             (if-let [f (:response interceptor)]
+                               (then resp f)
+                               resp))
+                           resp (reverse (or (:interceptors req)
+                                             interceptors/default-interceptors)))]
+          (if async
+            (-> ^CompletableFuture resp
+                (.thenApply
+                 (reify Function
+                   (apply [_ resp]
+                     (if-let [then-fn (:async-then req)]
+                       (then-fn resp)
+                       resp))))
+                (.exceptionally
+                 (reify Function
+                   (apply [_ e]
+                     (let [^Throwable e e]
+                       (if-let [catch-fn (:async-catch req)]
+                         (catch-fn (let [cause (ex-cause e)]
+                                     {:ex e
+                                      :ex-cause cause
+                                      :ex-data (ex-data (or cause e))
+                                      :ex-message (ex-message (or cause e))
+                                      :request req}))
+                         resp))))))
+            resp)))))
