@@ -2,5 +2,5 @@
   {:no-doc true})
 
 (def version
-  #_:version "0.3.12-SNAPSHOT"
+  #_:version "0.4.12"
   )
