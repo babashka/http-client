@@ -284,12 +284,11 @@
                   (.map (.headers resp)))})
 
 (defn then [x f]
-  (if (instance? java.util.concurrent.CompletableFuture x)
-    (.thenApply ^java.util.concurrent.CompletableFuture x
-                ^java.util.function.Function
-                (reify java.util.function.Function
-                  (apply [_ args]
-                    (f args))))
+  (if (instance? CompletableFuture x)
+    (.thenApply ^CompletableFuture x
+                ^Function (reify Function
+                            (apply [_ args]
+                              (f args))))
     (f x)))
 
 (defn merge-opts [x y]
@@ -322,23 +321,21 @@
                            resp (reverse (or (:interceptors req)
                                              interceptors/default-interceptors)))]
           (if async
-            (-> ^CompletableFuture resp
-                (.thenApply
-                 (reify Function
-                   (apply [_ resp]
-                     (if-let [then-fn (:async-then req)]
-                       (then-fn resp)
-                       resp))))
-                (.exceptionally
-                 (reify Function
-                   (apply [_ e]
-                     (let [^Throwable e e]
-                       (if-let [catch-fn (:async-catch req)]
-                         (catch-fn (let [cause (ex-cause e)]
-                                     {:ex e
-                                      :ex-cause cause
-                                      :ex-data (ex-data (or cause e))
-                                      :ex-message (ex-message (or cause e))
-                                      :request req}))
-                         resp))))))
+            (let [then-fn (:async-then req)
+                  catch-fn (:async-catch req)]
+              (cond-> ^CompletableFuture resp
+                then-fn (.thenApply
+                         (reify Function
+                           (apply [_ resp]
+                             (then-fn resp))))
+                catch-fn (.exceptionally
+                          (reify Function
+                            (apply [_ e]
+                              (let [^Throwable e e
+                                    cause (ex-cause e)]
+                                (catch-fn {:ex e
+                                           :ex-cause cause
+                                           :ex-data (ex-data (or cause e))
+                                           :ex-message (ex-message (or cause e))
+                                           :request req})))))))
             resp)))))

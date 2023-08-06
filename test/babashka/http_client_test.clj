@@ -404,6 +404,10 @@
                                                             :async-then (fn [resp]
                                                                           (:status resp))}))
     (is (= 200 @async-resp))
+    (def async-resp (http/get "http://localhost:12233/422" {:async true}))
+    (def ex (is (thrown-with-msg? java.util.concurrent.ExecutionException
+                                  #"^clojure.lang.ExceptionInfo: Exceptional status code: 422 "
+                                  @async-resp)))
     (def async-resp (http/get "http://localhost:12233/404" {:async true
                                                             :async-then (fn [resp]
                                                                           (:status resp))
