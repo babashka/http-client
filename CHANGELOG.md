@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- [#38](https://github.com/babashka/http-client/issues/38): Fix double wrapping of futures on exceptions during async requests ([@axvr](https://github.com/axvr))
+
 ## 0.4.12
 
 - Add `babashka.http-client.websocket` API (mostly based on hato, thanks [@gnarroway](https://github.com/gnarroway)). See [API docs](https://github.com/babashka/http-client/blob/main/API.md#babashka.http-client.websocket).
