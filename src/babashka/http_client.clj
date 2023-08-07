@@ -45,9 +45,9 @@
 
 (defn ->CookieHandler
   "Constructs a `java.net.CookieHandler` using `java.net.CookieManager`.
-  
+
     Options:
-  
+
     * `:store` - an optional `java.net.CookieStore` implementation
     * `:policy` - a `java.net.CookiePolicy` or one of `:accept-all`, `:accept-none`, `:original-server`"
   [opts]
@@ -55,9 +55,9 @@
 
 (defn ->SSLParameters
   "Constructs a `javax.net.ssl.SSLParameters`.
-   
+
    Options:
-   
+
    * `:ciphers` - a list of cipher suite names
    * `:protocols` - a list of protocol names"
   [opts]
@@ -65,9 +65,9 @@
 
 (defn ->Executor
   "Constructs a `java.util.concurrent.Executor`.
-   
+
    Options:
-   
+
    * `:threads` - constructs a `ThreadPoolExecutor` with the specified number of threads"
   [opts]
   (i/->Executor opts))
