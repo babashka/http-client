@@ -189,10 +189,13 @@
       (is (map? response))
       (is (= 200 (:status response)))
       (is (instance? java.io.InputStream (:body response)))
-      (is (= "200 OK" (slurp (:body response))))))
+      (is (= "200 OK" (slurp (:body response))))
+      (is (instance? java.net.URI (:uri response)))))
 
   (testing "response object with following redirect"
-    (let [response (http/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org")]
+    (let [response (http/get (str "https://httpbingo.org/redirect/" 2))
+          uri (:uri response)]
+      (is (= "https://httpbingo.org/get" (str uri)))
       (is (map? response))
       (is (= 200 (:status response)))))
 
