@@ -2,7 +2,7 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.4.14 (2023-08-17)
 
 - [#41](https://github.com/babashka/http-client/issues/41): add `:uri` to response map
 
