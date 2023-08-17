@@ -281,7 +281,8 @@
                   (map (fn [[k v]] [k (if (= 1 (count v))
                                         (first v)
                                         (vec v))]))
-                  (.map (.headers resp)))})
+                  (.map (.headers resp)))
+   :uri (.uri resp)})
 
 (defn then [x f]
   (if (instance? CompletableFuture x)
