@@ -206,6 +206,26 @@ Using the verbose `:uri` API for fine grained (and safer) URI construction:
  :url "https://httpbin.org/get?q=test"}
 ```
 
+### Custom client
+
+The default client in babashka.http-clietn is constructed conceptually as follows:
+
+``` clojure
+(def client (http/client http/default-client-opts))
+```
+
+To pass more options in addition to the default options, you can use `http/default-client-opts` and associate more options:
+
+``` clojure
+(def client (http/client (assoc-in http/default-client-opts [:ssl-context :insecure] true)))
+```
+
+Then use the custom client with HTTP requests:
+
+``` clojure
+(http/get "https://clojure.org" {:client client})
+```
+
 ### Redirects
 
 The default client is configured to always follow redirects. To opt out of this behaviour, construct a custom client:
