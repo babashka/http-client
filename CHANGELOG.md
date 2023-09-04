@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- #43: when using a string key for `Accept` header, the value is overridden by the default
+
 ## 0.4.14 (2023-08-17)
 
 - [#41](https://github.com/babashka/http-client/issues/41): add `:uri` to response map

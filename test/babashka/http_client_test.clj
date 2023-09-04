@@ -1,14 +1,14 @@
 (ns babashka.http-client-test
   (:require
    [babashka.fs :as fs]
+   [babashka.http-client :as http]
    [babashka.http-client.internal.version :as iv]
    [borkdude.deflet :refer [deflet]]
    [cheshire.core :as json]
    [clojure.java.io :as io]
    [clojure.string :as str]
    [clojure.test :refer [deftest is testing]]
-   [org.httpkit.server :as server]
-   [babashka.http-client :as http])
+   [org.httpkit.server :as server])
   (:import
    [clojure.lang ExceptionInfo]
    [javax.net.ssl SSLContext]))
@@ -336,6 +336,24 @@
                        {:headers {:accept "application/json"}})
              :body
              (json/parse-string true)
+             :code)))
+  (is (= 200
+         (-> (http/get "http://localhost:12233/200"
+                       {:headers {"Accept" "application/json"}})
+             :body
+             (json/parse-string true)
+             :code)))
+  (is (= 200
+         (-> (http/get "http://localhost:12233/200"
+                       {:headers {"accept" "application/json"}})
+             :body
+             (json/parse-string true)
+             :code)))
+  (is (= 200
+         (-> (http/get "http://localhost:12233/200"
+                       {:accept :json})
+             :body
+             (json/parse-string true)
              :code))))
 
 (deftest follow-redirects-test
@@ -408,9 +426,9 @@
                                                                           (:status resp))}))
     (is (= 200 @async-resp))
     (def async-resp (http/get "http://localhost:12233/422" {:async true}))
-    (def ex (is (thrown-with-msg? java.util.concurrent.ExecutionException
-                                  #"^clojure.lang.ExceptionInfo: Exceptional status code: 422 "
-                                  @async-resp)))
+    (def _ex (is (thrown-with-msg? java.util.concurrent.ExecutionException
+                                   #"^clojure.lang.ExceptionInfo: Exceptional status code: 422 "
+                                   @async-resp)))
     (def async-resp (http/get "http://localhost:12233/404" {:async true
                                                             :async-then (fn [resp]
                                                                           (:status resp))

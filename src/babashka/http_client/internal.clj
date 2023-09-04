@@ -303,6 +303,7 @@
         request-defaults (:request client)
         ^HttpClient client (or (:client client) client)
         req (merge-with merge-opts request-defaults req)
+        req (update req :headers aux/prefer-string-keys)
         request-interceptors (or (:interceptors req)
                                  interceptors/default-interceptors)
         req (apply-interceptors req request-interceptors :request)
