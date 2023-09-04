@@ -4,7 +4,7 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 
 ## 0.4.15 (2023-09-04)
 
-- #43: when using a string key for `Accept` header, the value is overridden by the default
+- [#43](https://github.com/babashka/http-client/issues/43): when using a string key for `Accept` header, the value is overridden by the default
 
 ## 0.4.14 (2023-08-17)
 
