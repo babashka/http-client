@@ -208,7 +208,7 @@ Using the verbose `:uri` API for fine grained (and safer) URI construction:
 
 ### Custom client
 
-The default client in babashka.http-clietn is constructed conceptually as follows:
+The default client in babashka.http-client is constructed conceptually as follows:
 
 ``` clojure
 (def client (http/client http/default-client-opts))
