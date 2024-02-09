@@ -69,7 +69,7 @@
              (json/parse-string true)
              :code)))
   (testing "query params"
-    (is (= {:foo1 "bar1", :foo2 "bar2", :foo3 "bar3", :not-string "42", :namespaced%2Fkey "foo"}
+    (is (= {:foo1 "bar1", :foo2 "bar2", :foo3 "bar3", :not-string "42", :namespaced/key "foo"}
            (-> (http/get "https://postman-echo.com/get" {:query-params {"foo1" "bar1" "foo2" "bar2" :foo3 "bar3" :not-string 42 :namespaced/key "foo"}})
                :body
                (json/parse-string true)
@@ -218,7 +218,7 @@
              :code))))
 
 (deftest url-encode-query-params-test
-  (is (= {"my query param%3F" "hello there"}
+  (is (= {"my query param?" "hello there"}
          (-> (http/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"}})
              :body
              (json/parse-string)

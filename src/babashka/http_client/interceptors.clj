@@ -81,7 +81,7 @@
                           (map (fn [v]
                                  [k v]) v)
                           (rest kvs)))
-          (recur (conj! params* (str (url-encode (coerce-key k)) "=" (url-encode (str v)))) (next kvs))))
+          (recur (conj! params* (str (coerce-key k) "=" (url-encode (str v)))) (next kvs))))
       (str/join "&" (persistent! params*)))))
 
 (def query-params
