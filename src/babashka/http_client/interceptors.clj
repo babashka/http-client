@@ -86,7 +86,10 @@
                                      (url-encode (str v)))) (next kvs))))
       (str/join "&" (persistent! params*)))))
 
-(defn uri-with-query [^java.net.URI uri new-query]
+(defn uri-with-query
+  "We can't use the URI constructor because it encodes all arguments for us.
+  See https://stackoverflow.com/a/77971448/6264"
+  [^java.net.URI uri new-query]
   (let [old-query (.getQuery uri)
         new-query (if old-query (str old-query "&" new-query)
                       new-query)]
