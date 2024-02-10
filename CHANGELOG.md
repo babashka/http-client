@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## 0.4.16 (2024-02-10)
+
+- [#45](https://github.com/babashka/http-client/issues/45): query param values are double encoded
+
 ## 0.4.15 (2023-09-04)
 
 - [#43](https://github.com/babashka/http-client/issues/43): when using a string key for `Accept` header, the value is overridden by the default
