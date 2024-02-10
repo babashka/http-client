@@ -95,8 +95,6 @@
                       new-query)]
     (java.net.URI.
      (str (.getScheme uri) "://"
-          (when-let [ui (.getUserInfo uri)]
-            (str "@" ui))
           (.getAuthority uri)
           (.getPath uri)
           (when-let [nq new-query]
@@ -116,7 +114,7 @@
                 opts))})
 
 (comment
-  (def uri (java.net.URI. "https://borkdude:foobar@foobar.net/?q=1#/dude"))
+  (def uri (java.net.URI. "https://borkdude:foobar@foobar.net:80/?q=1#/dude"))
   (.getScheme uri) ;;=> https
   (.getSchemeSpecificPart uri) ;;=> //foobar.net/?q=1
   (.getUserInfo uri) ;;=> nil
