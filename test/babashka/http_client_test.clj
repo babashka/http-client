@@ -219,8 +219,10 @@
              :code))))
 
 (deftest url-encode-query-params-test
-  (is (= {"my query param?" "hello there"}
-         (-> (http/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"}})
+  (is (= {"my query param?" "hello there"
+          "q" "foo & bar"}
+         (-> (http/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"
+                                                                      :q "foo & bar"}})
              :body
              (json/parse-string)
              (get "args")))))
