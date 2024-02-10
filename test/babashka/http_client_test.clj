@@ -2,6 +2,7 @@
   (:require
    [babashka.fs :as fs]
    [babashka.http-client :as http]
+   [babashka.http-client.interceptors :as i]
    [babashka.http-client.internal.version :as iv]
    [borkdude.deflet :refer [deflet]]
    [cheshire.core :as json]
@@ -218,8 +219,10 @@
              :code))))
 
 (deftest url-encode-query-params-test
-  (is (= {"my query param?" "hello there"}
-         (-> (http/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"}})
+  (is (= {"my query param?" "hello there"
+          "q" "foo & bar"}
+         (-> (http/get "https://postman-echo.com/get" {:query-params {"my query param?" "hello there"
+                                                                      :q "foo & bar"}})
              :body
              (json/parse-string)
              (get "args")))))
@@ -511,6 +514,18 @@
     (is nil? (http/->Executor {}))
     (is nil? (http/->Executor {:threads -1})))
   (is (instance? java.util.concurrent.ThreadPoolExecutor (http/->Executor {:threads 2}))))
+
+
+(deftest uri-with-query-params-test
+  (when (resolve `i/uri-with-query)
+    (is (=
+         "https://borkdude:foobar@foobar.net:80/?q=%26moo#/dude"
+         (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/#/dude")
+                                  "q=%26moo"))))
+    (is (=
+         "https://borkdude:foobar@foobar.net:80/?q=1&q=%26moo#/dude"
+         (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/?q=1#/dude")
+                                  "q=%26moo"))))))
 
 (comment
   (run-server)

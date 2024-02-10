@@ -81,8 +81,26 @@
                           (map (fn [v]
                                  [k v]) v)
                           (rest kvs)))
-          (recur (conj! params* (str (coerce-key k) "=" (url-encode (str v)))) (next kvs))))
+          (recur (conj! params* (str (url-encode (coerce-key k))
+                                     "="
+                                     (url-encode (str v)))) (next kvs))))
       (str/join "&" (persistent! params*)))))
+
+(defn uri-with-query
+  "We can't use the URI constructor because it encodes all arguments for us.
+  See https://stackoverflow.com/a/77971448/6264"
+  [^java.net.URI uri new-query]
+  (let [old-query (.getQuery uri)
+        new-query (if old-query (str old-query "&" new-query)
+                      new-query)]
+    (java.net.URI.
+     (str (.getScheme uri) "://"
+          (.getAuthority uri)
+          (.getPath uri)
+          (when-let [nq new-query]
+            (str "?" nq))
+          (when-let [f (.getFragment uri)]
+            (str "#" f))))))
 
 (def query-params
   "Request: encodes `:query-params` map and appends to `:uri`."
@@ -90,14 +108,22 @@
    :request (fn [opts]
               (if-let [qp (:query-params opts)]
                 (let [^java.net.URI uri (:uri opts)
-                      old-query (.getQuery uri)
                       new-query (map->query-params qp)
-                      new-query (if old-query (str old-query "&" new-query)
-                                    new-query)
-                      new-uri (java.net.URI. (.getScheme uri) (.getAuthority uri)
-                                             (.getPath uri) new-query (.getFragment uri))]
+                      new-uri (uri-with-query uri new-query)]
                   (assoc opts :uri new-uri))
                 opts))})
+
+(comment
+  (def uri (java.net.URI. "https://borkdude:foobar@foobar.net:80/?q=1#/dude"))
+  (.getScheme uri) ;;=> https
+  (.getSchemeSpecificPart uri) ;;=> //foobar.net/?q=1
+  (.getUserInfo uri) ;;=> nil
+  (.getAuthority uri) ;;=> "foobar.net"
+  (.getPath uri) ;;=> "/"
+  (.getQuery uri) ;;=> q=1
+  (.getFragment uri) ;;=> nil
+  (uri-with-query uri "f=dude%26hello")
+  )
 
 (def form-params
   "Request: encodes `:form-params` map and adds `:body`."
