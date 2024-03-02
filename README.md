@@ -351,6 +351,25 @@ Alternatively you can use `:async` + `deref` with a timeout + default value:
 ;;=> :user/too-late
 ```
 
+## Logging and debug
+
+If you need to debug HTTP requests you need to add a JVM system property with some debug options:
+`"-Djdk.httpclient.HttpClient.log=errors,requests,headers,frames[:control:data:window:all..],content,ssl,trace,channel"` 
+
+One way to handle that with tools-deps is to add an alias with `:jvm-opts` option.
+
+Here is a code snippet for `deps.edn`
+```clojure
+{
+;; REDACTED
+:aliases {
+ :debug
+ {:jvm-opts
+  [;; enable logging for java.net.http
+  "-Djdk.httpclient.HttpClient.log=errors,requests,headers,frames[:control:data:window:all..],content,ssl,trace,channel"]}
+}} 
+```
+
 ## Test
 
 ``` clojure
