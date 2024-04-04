@@ -112,6 +112,7 @@
   * `:form-params` - a map of form params to send in the request body.
   * `:body` - a file, inputstream or string to send as the request body.
   * `:basic-auth` - a sequence of `user` `password` or map with `:user` `:pass` used for basic auth.
+  * `:oauth-token` - a string token used for bearer auth.
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
   * `:async-then` - a function that is called on the async result if successful
   * `:async-catch` - a function that is called on the async result if exceptional
