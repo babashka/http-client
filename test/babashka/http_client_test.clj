@@ -515,7 +515,6 @@
     (is nil? (http/->Executor {:threads -1})))
   (is (instance? java.util.concurrent.ThreadPoolExecutor (http/->Executor {:threads 2}))))
 
-
 (deftest uri-with-query-params-test
   (when (resolve `i/uri-with-query)
     (is (=

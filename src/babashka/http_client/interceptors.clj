@@ -122,8 +122,7 @@
   (.getPath uri) ;;=> "/"
   (.getQuery uri) ;;=> q=1
   (.getFragment uri) ;;=> nil
-  (uri-with-query uri "f=dude%26hello")
-  )
+  (uri-with-query uri "f=dude%26hello"))
 
 (def form-params
   "Request: encodes `:form-params` map and adds `:body`."
