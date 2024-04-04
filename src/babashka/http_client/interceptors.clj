@@ -56,6 +56,19 @@
                   opts)
                 opts))})
 
+(def oauth-token
+  "Request: adds `:authorization` header based on `:oauth-token` (a string token)
+   in request."
+  {:name ::oauth-token
+   :request (fn [opts]
+              (if-let [oauth-token (:oauth-token opts)]
+                (let [headers (:headers opts)
+                      auth (str "Bearer " oauth-token)
+                      headers (assoc headers :authorization auth)
+                      opts (assoc opts :headers headers)]
+                  opts)
+                opts))})
+
 (def accept-header
   "Request: adds `:accept` header. Only supported value is `:json`."
   {:name ::accept-header
@@ -243,6 +256,7 @@
    construct-uri
    accept-header
    basic-auth
+   oauth-token
    query-params
    form-params
    multipart

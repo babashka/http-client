@@ -155,6 +155,14 @@ Basic auth:
 (:body (http/get "https://postman-echo.com/basic-auth" {:basic-auth ["postman" "password"]}))
 ;; => "{\"authenticated\":true}"
 ```
+### Oauth token
+
+Oauth token:
+
+``` clojure
+(:body (http/get "https://httpbin.org/bearer" {:oauth-token "qwertyuiop"}))
+;; => "{\n  \"authenticated\": true, \n  \"token\": \"qwertyuiop\"\n}\n"
+```
 
 ### Streaming
 

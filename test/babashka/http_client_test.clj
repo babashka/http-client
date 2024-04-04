@@ -178,6 +178,14 @@
                 (http/get "https://postman-echo.com/basic-auth"
                           {:basic-auth ["postman" "password"]})))))
 
+(deftest oauth-token-test
+  (let [token "qwertyuiop"
+        response (http/get "https://httpbin.org/bearer" {:oauth-token token})
+        resp-body (-> response :body (json/parse-string true))]
+    (is (= 200 (:status response)))
+    (is (:authenticated resp-body))
+    (is (= token (:token resp-body)))))
+
 (deftest get-response-object-test
   (let [response (http/get "http://localhost:12233/200")]
     (is (map? response))
