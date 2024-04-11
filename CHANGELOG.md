@@ -5,6 +5,7 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 ## Unreleased
 
 - [#49](https://github.com/babashka/http-client/issues/49): add `::oauth-token` interceptor
+- [#52](https://github.com/babashka/http-client/issues/52): document `:throw` option
 
 ## 0.4.16 (2024-02-10)
 

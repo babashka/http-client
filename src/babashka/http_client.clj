@@ -116,7 +116,8 @@
   * `:async` - perform request asynchronously. The response will be a `CompletableFuture` of the response map.
   * `:async-then` - a function that is called on the async result if successful
   * `:async-catch` - a function that is called on the async result if exceptional
-  * `:timeout` - request timeout in milliseconds.
+  * `:timeout` - request timeout in milliseconds
+  * `:throw` - throw on exceptional status codes, all other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
   "
   [opts]
