@@ -2,7 +2,7 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.4.17 (2024-04-12)
 
 - [#49](https://github.com/babashka/http-client/issues/49): add `::oauth-token` interceptor
 - [#52](https://github.com/babashka/http-client/issues/52): document `:throw` option
