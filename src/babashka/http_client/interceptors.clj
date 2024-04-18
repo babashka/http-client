@@ -211,7 +211,7 @@
    :response (fn [resp]
                (let [as (or (-> resp :request :as) :string)
                      body (:body resp)
-                     body (if (instance? java.io.InputStream body)
+                     body (if (not (string? body))
                             (case as
                               :string (slurp body)
                               :stream body
