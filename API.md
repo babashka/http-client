@@ -180,7 +180,7 @@ Options used to create the (implicit) default client.
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:delete`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L133-L138">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L134-L139">Source</a></sub></p>
 
 ## <a name="babashka.http-client/get">`get`</a><a name="babashka.http-client/get"></a>
 ``` clojure
@@ -190,7 +190,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:get`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L126-L131">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L127-L132">Source</a></sub></p>
 
 ## <a name="babashka.http-client/head">`head`</a><a name="babashka.http-client/head"></a>
 ``` clojure
@@ -200,7 +200,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:head`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L140-L145">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L141-L146">Source</a></sub></p>
 
 ## <a name="babashka.http-client/patch">`patch`</a><a name="babashka.http-client/patch"></a>
 ``` clojure
@@ -210,7 +210,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:patch`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L154-L161">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L155-L162">Source</a></sub></p>
 
 ## <a name="babashka.http-client/post">`post`</a><a name="babashka.http-client/post"></a>
 ``` clojure
@@ -220,7 +220,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:post`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L147-L152">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L148-L153">Source</a></sub></p>
 
 ## <a name="babashka.http-client/put">`put`</a><a name="babashka.http-client/put"></a>
 ``` clojure
@@ -230,7 +230,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:put`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L163-L170">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L164-L171">Source</a></sub></p>
 
 ## <a name="babashka.http-client/request">`request`</a><a name="babashka.http-client/request"></a>
 ``` clojure
@@ -247,7 +247,9 @@ Perform request. Returns map with at least `:body`, `:status`
   * `:headers` - a map of headers
   * `:method` - the request method: `:get`, `:post`, `:head`, `:delete`, `:patch` or `:put`
   * `:interceptors` - custom interceptor chain
-  * `:client` - a client as produced by [`client`](#babashka.http-client/client). If not provided a default client will be used.
+  * `:client` - a client as produced by [`client`](#babashka.http-client/client) or a clojure function. If not provided a default client will be used.
+                When providing :client with a a clojure function, it will be called with the Clojure representation of
+                the request which can be useful for testing.
   * `:query-params` - a map of query params. The values can be a list to send multiple params with the same key.
   * `:form-params` - a map of form params to send in the request body.
   * `:body` - a file, inputstream or string to send as the request body.
@@ -259,8 +261,7 @@ Perform request. Returns map with at least `:body`, `:status`
   * `:timeout` - request timeout in milliseconds
   * `:throw` - throw on exceptional status codes, all other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
-  
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L100-L124">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L100-L125">Source</a></sub></p>
 
 -----
 # <a name="babashka.http-client.interceptors">babashka.http-client.interceptors</a>
@@ -293,7 +294,7 @@ Request: adds `:authorization` header based on `:basic-auth` (a map
 
 
 Request: construct uri from map
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L220-L226">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L222-L228">Source</a></sub></p>
 
 ## <a name="babashka.http-client.interceptors/decode-body">`decode-body`</a><a name="babashka.http-client.interceptors/decode-body"></a>
 
@@ -301,7 +302,7 @@ Request: construct uri from map
 
 
 Response: based on the value of `:as` in request, decodes as `:string`, `:stream` or `:bytes`. Defaults to `:string`.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L208-L218">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L208-L220">Source</a></sub></p>
 
 ## <a name="babashka.http-client.interceptors/decompress-body">`decompress-body`</a><a name="babashka.http-client.interceptors/decompress-body"></a>
 
@@ -317,7 +318,7 @@ Response: decompresses body based on  "content-encoding" header. Valid values: `
 
 
 Default interceptor chain. Interceptors are called in order for request and in reverse order for response.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L253-L264">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L256-L267">Source</a></sub></p>
 
 ## <a name="babashka.http-client.interceptors/form-params">`form-params`</a><a name="babashka.http-client.interceptors/form-params"></a>
 
@@ -333,7 +334,7 @@ Request: encodes `:form-params` map and adds `:body`.
 
 
 Adds appropriate body and header if making a multipart request.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L241-L251">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L244-L254">Source</a></sub></p>
 
 ## <a name="babashka.http-client.interceptors/oauth-token">`oauth-token`</a><a name="babashka.http-client.interceptors/oauth-token"></a>
 
@@ -358,13 +359,13 @@ Request: encodes `:query-params` map and appends to `:uri`.
 
 
 Response: throw on exceptional status codes
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L231-L239">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L233-L242">Source</a></sub></p>
 
 ## <a name="babashka.http-client.interceptors/unexceptional-statuses">`unexceptional-statuses`</a><a name="babashka.http-client.interceptors/unexceptional-statuses"></a>
 
 
 
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L228-L229">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client/interceptors.clj#L230-L231">Source</a></sub></p>
 
 ## <a name="babashka.http-client.interceptors/uri-with-query">`uri-with-query`</a><a name="babashka.http-client.interceptors/uri-with-query"></a>
 ``` clojure

@@ -501,16 +501,16 @@
              (nil? (.getProtocols params)))))
   (let [params (http/->SSLParameters {:ciphers ["SSL_NULL_WITH_NULL_NULL"]})]
     (is (and (instance? javax.net.ssl.SSLParameters params)
-             (= (first (.getCipherSuites params)) "SSL_NULL_WITH_NULL_NULL"))))
+             (= "SSL_NULL_WITH_NULL_NULL" (first (.getCipherSuites params))))))
   (let [params (http/->SSLParameters {:protocols ["TLSv1"]})]
     (is (and (instance? javax.net.ssl.SSLParameters params)
-             (= (first (.getProtocols params)) "TLSv1"))))
+             (= "TLSv1" (first (.getProtocols params))))))
   (let [params-from-opts (http/->SSLParameters {:ciphers ["SSL_NULL_WITH_NULL_NULL"]
                                                 :protocols ["TLSv1"]})
         params-from-params (http/->SSLParameters params-from-opts)]
     (is (and (instance? javax.net.ssl.SSLParameters params-from-params)
-             (= (first (.getCipherSuites params-from-params)) "SSL_NULL_WITH_NULL_NULL")
-             (= (first (.getProtocols params-from-params)) "TLSv1")))))
+             (= "SSL_NULL_WITH_NULL_NULL" (first (.getCipherSuites params-from-params)))
+             (= "TLSv1" (first (.getProtocols params-from-params)))))))
 
 (deftest executor-test
   (testing "nil passthrough"
@@ -533,6 +533,14 @@
          "https://borkdude:foobar@foobar.net:80/?q=1&q=%26moo#/dude"
          (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/?q=1#/dude")
                                   "q=%26moo"))))))
+
+(deftest ring-client-test
+  (let [resp (http/get "https://clojure.org"
+                       {:client (fn [req]
+                                  {:body (java.io.ByteArrayInputStream. (.getBytes "Hello"))
+                                   :clojure (= "https://clojure.org" (str (:uri req)))})})]
+    (is (:clojure resp))
+    (is (= "Hello" (:body resp)))))
 
 (comment
   (run-server)
