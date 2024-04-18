@@ -1,7 +1,7 @@
 {:deps {}
  :aliases
  {:neil {:project {:name org.babashka/http-client
-                   :version "0.4.17"}}
+                   :version "0.4.18"}}
   :repl {:extra-deps {cheshire/cheshire {:mvn/version "5.11.0"}
                       io.github.borkdude/deflet {:mvn/version "0.1.0"}
                       babashka/fs {:mvn/version "0.2.16"}}}
