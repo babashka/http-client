@@ -335,6 +335,17 @@ function is executed on the response. Default interceptors are in
 configured on the level of requests by passing a modified `:interceptors`
 chain.
 
+#### Testing interceptors
+
+For testing interceptors it can be useful to use the `:client` option in combination with a
+Clojure function. When passing a function, the request won't be converted to a
+`java.net.http.Request` but just passed as a ring request to the function. The
+function is expected to return a ring response:
+
+``` clojure
+(http/get "https://clojure.org" {:client (fn [req] {:body 200})})
+```
+
 ### Async
 
 To execute request asynchronously, use `:async true`. The response will be a
@@ -375,7 +386,7 @@ Here is a code snippet for `deps.edn`
  {:jvm-opts
   [;; enable logging for java.net.http
   "-Djdk.httpclient.HttpClient.log=errors,requests,headers,frames[:control:data:window:all..],content,ssl,trace,channel"]}
-}} 
+}}
 ```
 
 ## Test

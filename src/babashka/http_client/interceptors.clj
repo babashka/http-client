@@ -211,10 +211,12 @@
    :response (fn [resp]
                (let [as (or (-> resp :request :as) :string)
                      body (:body resp)
-                     body (case as
-                            :string (slurp body)
-                            :stream body
-                            :bytes (stream-bytes body))]
+                     body (if (not (string? body))
+                            (case as
+                              :string (slurp body)
+                              :stream body
+                              :bytes (stream-bytes body))
+                            body)]
                  (assoc resp :body body)))})
 
 (def construct-uri
@@ -232,11 +234,12 @@
   "Response: throw on exceptional status codes"
   {:name ::throw-on-exceptional-status-code
    :response (fn [resp]
-               (let [status (:status resp)]
+               (if-let [status (:status resp)]
                  (if (or (false? (some-> resp :request :throw))
                          (contains? unexceptional-statuses status))
                    resp
-                   (throw (ex-info (str "Exceptional status code: " status) resp)))))})
+                   (throw (ex-info (str "Exceptional status code: " status) resp)))
+                 resp))})
 
 (def multipart
   "Adds appropriate body and header if making a multipart request."

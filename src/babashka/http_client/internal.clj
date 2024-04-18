@@ -301,19 +301,24 @@
   [{:keys [client raw] :as req}]
   (let [client (or client @default-client)
         request-defaults (:request client)
-        ^HttpClient client (or (:client client) client)
+        client* (or (:client client) client)
+        ^HttpClient client client*
+        ring-client (when (ifn? client*)
+                      client*)
         req (merge-with merge-opts request-defaults req)
         req (update req :headers aux/prefer-string-keys)
         request-interceptors (or (:interceptors req)
                                  interceptors/default-interceptors)
         req (apply-interceptors req request-interceptors :request)
-        req' (ring->HttpRequest req)
+        req' (when-not ring-client (ring->HttpRequest req))
         async (:async req)
-        resp (if async
-               (.sendAsync client req' (HttpResponse$BodyHandlers/ofInputStream))
-               (.send client req' (HttpResponse$BodyHandlers/ofInputStream)))]
+        resp (if ring-client
+               (ring-client req)
+               (if async
+                 (.sendAsync client req' (HttpResponse$BodyHandlers/ofInputStream))
+                 (.send client req' (HttpResponse$BodyHandlers/ofInputStream))))]
     (if raw resp
-        (let [resp (then resp response->map)
+        (let [resp (if ring-client resp (then resp response->map))
               resp (then resp (fn [resp]
                                 (assoc resp :request req)))
               resp (reduce (fn [resp interceptor]
