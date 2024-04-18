@@ -535,16 +535,19 @@
                                   "q=%26moo"))))))
 
 (deftest ring-client-test
-  (testing "string body"
-    (let [resp (http/get "https://clojure.org"
-                         {:client (fn [_req]
-                                    {:body "Hello"})})]
-      (is (= "Hello" (:body resp)))))
   (testing "inputstring body"
-    (let [resp (http/get "https://clojure.org"
-                         {:client (fn [req]
-                                    {:body (java.io.ByteArrayInputStream. (.getBytes "Hello"))
-                                     :clojure (= "https://clojure.org" (str (:uri req)))})})]
+    (doseq [resp [(http/get "https://clojure.org"
+                            {:client (fn [_req]
+                                       {:body "Hello"
+                                        :clojure true})})
+                  (http/get "https://clojure.org"
+                            {:client (fn [req]
+                                       {:body (java.io.ByteArrayInputStream. (.getBytes "Hello"))
+                                        :clojure (= "https://clojure.org" (str (:uri req)))})})
+                  (http/get "https://clojure.org"
+                            {:client (fn [_req]
+                                       {:body (java.io.StringReader. "Hello")
+                                        :clojure true})})]]
       (is (:clojure resp))
       (is (= "Hello" (:body resp))))))
 
