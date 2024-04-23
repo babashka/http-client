@@ -15,6 +15,7 @@
     HttpClient$Redirect
     HttpClient$Version
     HttpRequest
+    HttpRequest$BodyPublisher
     HttpRequest$BodyPublishers
     HttpRequest$Builder
     HttpResponse
@@ -51,7 +52,6 @@
     (with-open [kss (io/input-stream store)]
       (doto (KeyStore/getInstance store-type)
         (.load kss (char-array store-pass))))))
-
 
 (def has-extended? (resolve 'javax.net.ssl.X509ExtendedTrustManager))
 
@@ -220,6 +220,9 @@
     (instance? java.nio.file.Path body)
     (let [^java.nio.file.Path path body]
       (HttpRequest$BodyPublishers/ofFile path))
+
+    (instance? HttpRequest$BodyPublisher body)
+    body
 
     :else
     (throw (ex-info (str "Don't know how to convert " (type body) "to body")

@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- [#55](https://github.com/babashka/http-client/issues/55): allow `:body` be `java.net.http.HttpRequest$BodyPublisher`
+
 ## 0.4.18 (2024-04-18)
 
 - Support a Clojure function as `:client` option, mostly useful for testing

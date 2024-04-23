@@ -12,6 +12,7 @@
    [org.httpkit.server :as server])
   (:import
    [clojure.lang ExceptionInfo]
+   [java.net.http HttpRequest$BodyPublishers]
    [javax.net.ssl SSLContext]))
 
 (def !server (atom nil))
@@ -132,6 +133,19 @@
          (:body (http/post "https://postman-echo.com/post"
                            {:body (io/input-stream "README.md")}))
          "babashka")))
+  (testing "HttpRequest$BodyPublisher body"
+    (is (not (str/includes?
+              (:body (http/post "https://postman-echo.com/post"
+                                {:body (io/input-stream "README.md")}))
+              "content-length")))
+    (is (str/includes?
+         (:body (http/post "https://postman-echo.com/post"
+                           {:body (HttpRequest$BodyPublishers/fromPublisher
+                                   (HttpRequest$BodyPublishers/ofInputStream
+                                    (reify java.util.function.Supplier
+                                      (get [_this] (io/input-stream "README.md"))))
+                                   (.length (io/file "README.md")))}))
+         "content-length")))
   (testing "form-params"
     (let [body (:body (http/post "https://postman-echo.com/post"
                                  {:form-params {"name" "Michiel Borkent"
