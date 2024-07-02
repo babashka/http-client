@@ -153,7 +153,7 @@ Construct a custom client. To get the same behavior as the (implicit) default cl
   * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of [`->ProxySelector`](#babashka.http-client/->ProxySelector).
   * `:authenticator` - a `java.net.Authenticator` or a map of options, see docstring of [`->Authenticator`](#babashka.http-client/->Authenticator).
   * `:cookie-handler` - a `java.net.CookieHandler` or a map of options, see docstring of [`->CookieHandler`](#babashka.http-client/->CookieHandler).
-  * `:version` - the HTTP version: `:http1.1` or `:http2`.
+  * `:version` - the HTTP version: `:http1.1` or `:http2` (default: `:http2`).
   * `:priority` - priority for HTTP2 requests, integer between 1-256 inclusive.
 
   Returns map with:
@@ -260,7 +260,7 @@ Perform request. Returns map with at least `:body`, `:status`
   * `:async-catch` - a function that is called on the async result if exceptional
   * `:timeout` - request timeout in milliseconds
   * `:throw` - throw on exceptional status codes, all other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`
-  * `:version` - the HTTP version: `:http1.1` or `:http2`.
+  * `:version` - the HTTP version: `:http1.1` or `:http2` (default: `:http2`).
 <p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L100-L125">Source</a></sub></p>
 
 -----
