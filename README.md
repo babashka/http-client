@@ -103,7 +103,7 @@ To send multiple params to the same key:
 ```clojure
 ;; https://postman-echo.com/get?q=clojure&q=curl
 
-(-> (http/get "https://postman-echo.com/get" {:query-params {:q ["clojure "curl"]}})
+(-> (http/get "https://postman-echo.com/get" {:query-params {:q ["clojure" "curl"]}})
     :body (json/parse-string true) :args)
 ;;=> {:q ["clojure" "curl"]}
 ```
