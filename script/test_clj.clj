@@ -7,7 +7,7 @@
    [clojure.string :as str]))
 
 (defn -main[& args]
-  (let [farg (first *command-line-args*)
+  (let [farg (first args)
         ;; allow for missing leading colon
         farg (if (and farg (str/starts-with? farg "clj-"))
                (str ":" farg)
