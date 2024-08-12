@@ -48,7 +48,7 @@ jobs:
           restore-keys: cljdeps-
 
       - name: Run clj tests
-        run: bb test:clj
+        run: bb test:clj :clj-all
 
       - name: Run bb tests
         run: bb test:bb

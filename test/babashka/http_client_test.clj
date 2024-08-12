@@ -21,7 +21,7 @@
   (let [server
         (server/run-server
          (fn [{:keys [uri body] :as req}]
-           (let [status (parse-long (subs uri 1))
+           (let [status (Long/valueOf (subs uri 1))
                  json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
              (case status
                200 (let [body (if json?
@@ -423,7 +423,7 @@
                        :code)))))))
 
 (deftest multipart-test
-  (let [uuid (.toString (random-uuid))
+  (let [uuid (.toString (java.util.UUID/randomUUID))
         _ (spit (doto (io/file ".test-data")
                   (.deleteOnExit)) uuid)
         resp (http/post "https://postman-echo.com/post"
