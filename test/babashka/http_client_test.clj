@@ -134,18 +134,15 @@
                            {:body (io/input-stream "README.md")}))
          "babashka")))
   (testing "HttpRequest$BodyPublisher body"
-    (is (not (str/includes?
-              (:body (http/post "https://postman-echo.com/post"
-                                {:body (io/input-stream "README.md")}))
-              "content-length")))
-    (is (str/includes?
-         (:body (http/post "https://postman-echo.com/post"
-                           {:body (HttpRequest$BodyPublishers/fromPublisher
-                                   (HttpRequest$BodyPublishers/ofInputStream
-                                    (reify java.util.function.Supplier
-                                      (get [_this] (io/input-stream "README.md"))))
-                                   (.length (io/file "README.md")))}))
-         "content-length")))
+    (let [body (:body (http/post "https://postman-echo.com/post"
+                                 {:body (HttpRequest$BodyPublishers/fromPublisher
+                                          (HttpRequest$BodyPublishers/ofInputStream
+                                            (reify java.util.function.Supplier
+                                              (get [_this] (io/input-stream "README.md"))))
+                                          (.length (io/file "README.md")))}))
+          {:keys [data headers]} (json/parse-string body true)]
+      (is (= (str (fs/size "README.md")) (:content-length headers)))
+      (is (= (slurp "README.md") data))))
   (testing "form-params"
     (let [body (:body (http/post "https://postman-echo.com/post"
                                  {:form-params {"name" "Michiel Borkent"
