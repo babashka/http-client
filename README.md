@@ -11,6 +11,8 @@ See [API.md](API.md).
 
 > NOTE: The `babashka.http-client` library is built-in as of babashka version 1.1.171.
 
+> TIP: We test and support `babashka.http-client` on Clojure v1.10 and above.
+
 ## Stability
 
 The `babashka.http-client` namespace can be considered stable. The

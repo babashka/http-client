@@ -1,5 +1,7 @@
-{:tasks
- {test:clj (apply clojure "-M:test" *command-line-args*)
+{:paths ["script"]
+ :tasks
+ {test:clj {:doc "Run jvm tests, optionally specify clj-version (ex. :clj-1.10 :clj-1.11(default) or :clj-all)"
+            :task test-clj/-main}
 
   test:bb {:extra-paths ["src" "test"]
            :extra-deps {io.github.cognitect-labs/test-runner

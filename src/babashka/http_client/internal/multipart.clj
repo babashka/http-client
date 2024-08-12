@@ -42,7 +42,7 @@
 
   See https://www.ietf.org/rfc/rfc2046.txt"
   []
-  (str "babashka_http_client_Boundary" (random-uuid)))
+  (str "babashka_http_client_Boundary" (java.util.UUID/randomUUID)))
 
 (defn concat-streams [^InputStream is1 ^InputStream is2 & more]
   (let [is (new java.io.SequenceInputStream is1 is2)]
