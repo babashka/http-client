@@ -15,6 +15,8 @@
    [java.net.http HttpRequest$BodyPublishers]
    [javax.net.ssl SSLContext]))
 
+(set! *warn-on-reflection* false) ;; only in this test namespace
+
 (def !server (atom nil))
 
 (defn run-server []
