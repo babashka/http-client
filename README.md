@@ -361,7 +361,6 @@ In this example we change the `throw-on-exceptional-status-code` interceptor to 
                    (throw (ex-info (str "Exceptional status code: " status) resp)))
                  resp))})
 
-
 (def my-interceptors
   (mapv (fn [i]
          (if (= ::i/throw-on-exceptional-status-code
