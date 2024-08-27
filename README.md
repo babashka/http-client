@@ -337,6 +337,45 @@ function is executed on the response. Default interceptors are in
 configured on the level of requests by passing a modified `:interceptors`
 chain.
 
+#### Changing an existing interceptor
+
+In this example we change the `throw-on-exceptional-status-code` interceptor to not throw on a `404` status code:
+
+``` clojure
+(require '[babashka.http-client :as http]
+         '[babashka.http-client.interceptors :as i])
+
+(def unexceptional-statuses
+  (conj #{200 201 202 203 204 205 206 207 300 301 302 303 304 307}
+        ;; we also don't throw on 404
+        404))
+
+(def my-throw-on-exceptional-status-code
+  "Response: throw on exceptional status codes"
+  {:name ::throw-on-exceptional-status-code
+   :response (fn [resp]
+               (if-let [status (:status resp)]
+                 (if (or (false? (some-> resp :request :throw))
+                         (contains? unexceptional-statuses status))
+                   resp
+                   (throw (ex-info (str "Exceptional status code: " status) resp)))
+                 resp))})
+
+
+(def my-interceptors
+  (mapv (fn [i]
+         (if (= ::i/throw-on-exceptional-status-code
+                (:name i))
+           my-throw-on-exceptional-status-code
+           i))
+        i/default-interceptors))
+
+(def my-response
+  (http/get "https://postman-echo.com/get/404" {:interceptors my-interceptors}))
+
+(prn (:status my-response)) ;; 404
+```
+
 #### Testing interceptors
 
 For testing interceptors it can be useful to use the `:client` option in combination with a
