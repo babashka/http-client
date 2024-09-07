@@ -13,12 +13,6 @@ See [API.md](API.md).
 
 > TIP: We test and support `babashka.http-client` on Clojure v1.10 and above.
 
-## Stability
-
-The `babashka.http-client` namespace can be considered stable. The
-`babashka.http-client.interceptors` namespace may still undergo some breaking
-changes.
-
 ## Installation
 
 Use as a dependency in `deps.edn` or `bb.edn`:

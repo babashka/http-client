@@ -2,7 +2,7 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## 0.4.20
+## 0.4.20 (2024-08-13)
 
 - [#60](https://github.com/babashka/http-client/issues/60): Minimum Clojure version is now 1.10 instead of 1.11
 ([@lread](https://github.com/lread))
