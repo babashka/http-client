@@ -539,12 +539,12 @@
 (deftest uri-with-query-params-test
   (when (resolve `i/uri-with-query)
     (is (=
-         "https://borkdude:foobar@foobar.net:80/?q=%26moo#/dude"
-         (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/#/dude")
+         "https://borkdude:foobar@foobar.net:80/single%2felement?q=%26moo#/dude"
+         (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/single%2felement#/dude")
                                   "q=%26moo"))))
     (is (=
-         "https://borkdude:foobar@foobar.net:80/?q=1&q=%26moo#/dude"
-         (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/?q=1#/dude")
+         "https://borkdude:foobar@foobar.net:80/single%2felement?q=1&q=%26moo#/dude"
+         (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/single%2felement?q=1#/dude")
                                   "q=%26moo"))))))
 
 (deftest ring-client-test
