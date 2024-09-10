@@ -4,7 +4,7 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 
 ## Unreleased
 
-- Fix accidental URI path decoding in uri-with-query
+- [#68](https://github.com/babashka/http-client/issues/68) Fix accidental URI path decoding in uri-with-query
 
 ## 0.4.20 (2024-08-13)
 
