@@ -2,7 +2,7 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.4.21 (2024-09-10)
 
 - [#68](https://github.com/babashka/http-client/issues/68) Fix accidental URI path decoding in uri-with-query
 
