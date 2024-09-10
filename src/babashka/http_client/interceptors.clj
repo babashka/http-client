@@ -109,7 +109,7 @@
     (java.net.URI.
      (str (.getScheme uri) "://"
           (.getAuthority uri)
-          (.getPath uri)
+          (.getRawPath uri)
           (when-let [nq new-query]
             (str "?" nq))
           (when-let [f (.getFragment uri)]
@@ -127,12 +127,12 @@
                 opts))})
 
 (comment
-  (def uri (java.net.URI. "https://borkdude:foobar@foobar.net:80/?q=1#/dude"))
+  (def uri (java.net.URI. "https://borkdude:foobar@foobar.net:80/single%2felement?q=1#/dude"))
   (.getScheme uri) ;;=> https
   (.getSchemeSpecificPart uri) ;;=> //foobar.net/?q=1
   (.getUserInfo uri) ;;=> nil
   (.getAuthority uri) ;;=> "foobar.net"
-  (.getPath uri) ;;=> "/"
+  (.getRawPath uri) ;;=> "/single%2felement"
   (.getQuery uri) ;;=> q=1
   (.getFragment uri) ;;=> nil
   (uri-with-query uri "f=dude%26hello"))
