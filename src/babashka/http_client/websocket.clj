@@ -10,7 +10,7 @@
 (defn websocket
   "Builds `java.net.http.Websocket` client.
   * `:uri` - the uri to request (required).
-     May be a string or map of `:schema` (required), `:host` (required), `:port`, `:path` and `:query`
+     May be a string or map of `:scheme` (required), `:host` (required), `:port`, `:path` and `:query`
   * `:headers` - a map of headers for the initial handshake`
   * `:client` - a client as produced by `client`. If not provided a default client will be used.
   * `:connect-timeout` Sets a timeout for establishing a WebSocket connection (in millis).
