@@ -24,8 +24,14 @@
                 :version version
                 :basis basis
                 :src-dirs ["src"]
+                :scm {:url "https://github.com/babashka/http-client"
+                      :connection "scm:git:git@github.com:babashka/http-client.git"
+                      :developerConnection "scm:git:git@github.com:babashka/http-client.git"
+                      :tag (format "v%s" version)}
                 :pom-data
-                [[:licenses
+                [[:description "HTTP client for Clojure and Babashka built on java.net.http"]
+                 [:url "https://github.com/babashka/http-client"]
+                 [:licenses
                   [:license
                    [:name "MIT License"]
                    [:url "https://opensource.org/license/mit/"]]]]})
