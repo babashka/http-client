@@ -8,7 +8,7 @@
         (java.net.URI. ^String (:scheme uri)
                        ^String (:user uri)
                        ^String (:host uri)
-                       ^Integer (:port uri)
+                       ^Integer (:port uri -1)
                        ^String (:path uri)
                        ^String (:query uri)
                        ^String (:fragment uri))
