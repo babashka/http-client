@@ -6,6 +6,7 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 
 - [#71](https://github.com/babashka/http-client/issues/71): Link back to sources in release artifact
 ([@lread](https://github.com/lread))
+- [#73](https://github.com/babashka/http-client/issues/71): Allow implicit ports when specifying the URL as a map ([@lvh](https://github.com/lvh))
 
 ## 0.4.21 (2024-09-10)
 
