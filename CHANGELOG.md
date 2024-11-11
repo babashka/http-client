@@ -2,15 +2,15 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.4.22 (2024-11-11)
 
+- [#73](https://github.com/babashka/http-client/issues/71): Allow implicit ports when specifying the URL as a map ([@lvh](https://github.com/lvh))
 - [#71](https://github.com/babashka/http-client/issues/71): Link back to sources in release artifact
 ([@lread](https://github.com/lread))
-- [#73](https://github.com/babashka/http-client/issues/71): Allow implicit ports when specifying the URL as a map ([@lvh](https://github.com/lvh))
 
 ## 0.4.21 (2024-09-10)
 
-- [#68](https://github.com/babashka/http-client/issues/68) Fix accidental URI path decoding in uri-with-query
+- [#68](https://github.com/babashka/http-client/issues/68) Fix accidental URI path decoding in uri-with-query ([@hxtmdev](https://github.com/hxtmdev))
 
 ## 0.4.20 (2024-08-13)
 

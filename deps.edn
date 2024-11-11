@@ -1,7 +1,7 @@
 {:deps {}
  :aliases
  {:neil {:project {:name org.babashka/http-client
-                   :version "0.4.21"}}
+                   :version "0.4.22"}}
   :clj-1.10 {:extra-deps {org.clojure/clojure {:mvn/version "1.10.3"}}}
   :clj-1.11 {:extra-deps {org.clojure/clojure {:mvn/version "1.11.4"}}}
   :clj-1.12 {:extra-deps {org.clojure/clojure {:mvn/version "1.12.0-rc1"}}}
