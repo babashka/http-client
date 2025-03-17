@@ -1,7 +1,7 @@
 # http-client
 
 [![Clojars Project](https://img.shields.io/clojars/v/org.babashka/http-client.svg)](https://clojars.org/org.babashka/http-client)
-[![bb built-in](https://raw.githubusercontent.com/babashka/babashka/master/logo/built-in-badge.svg)](https://babashka.org)
+[![bb built-in](https://raw.githubusercontent.com/babashka/babashka/master/logo/built-in-badge.svg)](https://book.babashka.org#badges)
 
 An HTTP client for Clojure and Babashka built on `java.net.http`.
 
