@@ -189,7 +189,7 @@
                        :accept-encoding ["gzip" "deflate"]
                        :user-agent (str "babashka.http-client/" iv/version)}}})
 
-(def ^HttpClient default-client
+(def default-client
   (delay (client default-client-opts)))
 
 (defn- method-keyword->str [method]
