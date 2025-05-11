@@ -18,7 +18,7 @@ See [API.md](API.md).
 Use as a dependency in `deps.edn` or `bb.edn`:
 
 ``` clojure
-org.babashka/http-client {:mvn/version "0.3.11"}
+org.babashka/http-client {:mvn/version "0.4.22"}
 ```
 
 ## Rationale
