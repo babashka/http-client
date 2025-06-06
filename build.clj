@@ -1,6 +1,6 @@
 (ns build
-  (:require [clojure.tools.build.api :as b]
-            [clojure.edn :as edn]))
+  (:require [clojure.edn :as edn]
+            [clojure.tools.build.api :as b]))
 
 (def project (-> (edn/read-string (slurp "deps.edn"))
                  :aliases :neil :project))
