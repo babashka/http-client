@@ -1,8 +1,8 @@
 (ns babashka.http-client.interceptors
   (:refer-clojure :exclude [send get])
   (:require
-   [babashka.http-client.internal.multipart :as multipart]
    [babashka.http-client.internal.helpers :as aux]
+   [babashka.http-client.internal.multipart :as multipart]
    [clojure.java.io :as io]
    [clojure.string :as str])
   (:import
@@ -250,7 +250,10 @@
                   (-> req
                       (dissoc :multipart)
                       (assoc :body (multipart/body multipart b))
-                      (update :headers assoc "content-type" (str "multipart/form-data; boundary=" b))))
+                      (update :headers (fn [headers]
+                                         (-> headers
+                                             (dissoc "content-type" "Content-Type" :content-type)
+                                             (assoc "content-type" (str "multipart/form-data; boundary=" b)))))))
                 req))})
 
 (def default-interceptors
