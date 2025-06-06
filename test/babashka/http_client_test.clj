@@ -564,6 +564,15 @@
       (is (:clojure resp))
       (is (= "Hello" (:body resp))))))
 
+(deftest leniency-test
+  (is (http/get "http://localhost:12233/200"))
+  (is (http/request {:method :get
+                      :uri "http://localhost:12233/200"}))
+  (is (http/request {:request-method :get
+                     :uri "http://localhost:12233/200"}))
+  (is (http/request {:request-method :get
+                     :url "http://localhost:12233/200"})))
+
 (comment
   (run-server)
   (stop-server))

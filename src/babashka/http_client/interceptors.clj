@@ -223,9 +223,19 @@
   "Request: construct uri from map"
   {:name ::construct-uri
    :request (fn [req]
-              (let [uri (:uri req)
+              (let [uri (or (:uri req)
+                            (:url req))
                     uri (aux/->uri uri)]
                 (assoc req :uri uri)))})
+
+(def request-method
+  "Request: normalize :method option"
+  {:name ::request-method
+   :request (fn [req]
+              (if (:method req) req
+                  (if-let [m (:request-method req)]
+                    (assoc req :method m)
+                    req)))})
 
 (def unexceptional-statuses
   #{200 201 202 203 204 205 206 207 300 301 302 303 304 307})
@@ -259,6 +269,7 @@
 (def default-interceptors
   "Default interceptor chain. Interceptors are called in order for request and in reverse order for response."
   [throw-on-exceptional-status-code
+   request-method
    construct-uri
    accept-header
    basic-auth

@@ -5,7 +5,9 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 ## 0.4.23 (2025-06-06)
 
 - [#75](https://github.com/babashka/http-client/issues/75): override existing content type header in multipart request
- 
+- Accept `:request-method` in addition to `:request` to align more with other clients
+- Accept `:url` in addition to `:uri` to align more with other clients
+
 ## 0.4.22 (2024-11-11)
 
 - [#73](https://github.com/babashka/http-client/issues/71): Allow implicit ports when specifying the URL as a map ([@lvh](https://github.com/lvh))
