@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- [#80](https://github.com/babashka/http-client/issues/80): add idiomatic proxy configuration functionality
+
 ## 0.4.23 (2025-06-06)
 
 - [#75](https://github.com/babashka/http-client/issues/75): override existing content type header in multipart request

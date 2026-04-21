@@ -6,13 +6,43 @@
   "Options used to create the (implicit) default client."
   i/default-client-opts)
 
+(defn proxy-scheme
+  "Return a handler that will use the proxy described by `opts` for all URLs with a scheme equal to `scheme`."
+   [scheme opts]
+  (i/proxy-scheme scheme opts))
+
+(defn proxy-exclude-urls
+  "Return a handler pair that will use a direct proxy for all URLs that have a hostname ending with any of the excluded hostnames."
+  [excluded-urls]
+  (i/proxy-exclude-urls excluded-urls))
+
+(defn proxy-all
+  "Return a handler that will always use the provided proxy. Use `->ProxySelector` with the `:host` and `:port` arguments if you
+  do not combine this with other handlers."
+  [opts]
+  (i/proxy-all opts))
+
+(defn proxy-host
+  "Return a handler that will handle a single hostname with the provided proxy."
+  [hostname opts]
+  (i/proxy-host hostname opts))
+
 (defn ->ProxySelector
-  "Constructs a `java.net.ProxySelector`.
+  "Constructs a `java.net.ProxySelector`. Can either take a map of `:host` and `:port` actions, or a list of predicate/proxy
+  pairs for more complex configuration.
+
   Options:
   * `:host` - string
-  * `:port` - long"
-  [opts]
-  (i/->ProxySelector opts))
+  * `:port` - long
+  Handlers:
+  * `pred`: A one-argument function receiving a java.net.URI argument. If it returns truthy, the corresponding proxy is returned.
+  * `proxy`: A map of proxy options containing `:host`, `:port` and `:type` keys. `:host` is a string, `:port` a long and `:type` can
+             be `:direct`, `:http` or `:socks`. Use the `proxy-scheme`, `proxy-exclude-urls`, `proxy-all` or `proxy-host` functions
+             to build handler pairs."
+  [opts-or-handlers]
+  (if (vector? opts-or-handlers)
+    (i/make-proxy-selector opts-or-handlers)
+    (i/->ProxySelector opts-or-handlers)))
 
 (defn ->SSLContext
   "Constructs a `javax.net.ssl.SSLContext`.
