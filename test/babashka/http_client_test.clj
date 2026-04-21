@@ -511,7 +511,17 @@
 (deftest proxy-selector
   (is (instance? java.net.ProxySelector
                  (http/->ProxySelector {:host "https://clojure.org"
-                                        :port 1337}))))
+                                        :port 1337})))
+  (let [complex-proxy-selector (http/->ProxySelector [(http/proxy-exclude-urls #{"localhost"})
+                                                      (http/proxy-scheme "http" {:host "example.org" :port 8080 :type :http})])]
+    (is (instance? java.net.ProxySelector complex-proxy-selector))
+    (let [proxies-for-http (.select complex-proxy-selector (java.net.URI. "http://www.example.org"))
+          excluded-proxies (.select complex-proxy-selector (java.net.URI. "http://localhost"))
+          proxies-for-https (.select complex-proxy-selector (java.net.URI. "https://www.example.org"))]
+      (is (= (count proxies-for-http) (count proxies-for-https) (count excluded-proxies) 1))
+      (is (= (.type (get proxies-for-http 0)) java.net.Proxy$Type/HTTP))
+      (is (= (.type (get excluded-proxies 0)) java.net.Proxy$Type/DIRECT))
+      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT)))))
 
 (deftest cookie-handler-test
   (testing "nil passthrough"
