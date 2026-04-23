@@ -17,9 +17,10 @@
   * `fn`: A one-argument function receiving a java.net.URI argument and returning a proxy configuration for ->Proxy or nil
           (meaning don't use a proxy)."
   [opts-or-fn]
-  (if (map? opts-or-fn)
-    (i/->ProxySelector opts-or-fn)
-    (i/fn->ProxySelector opts-or-fn)))
+  (cond
+    (instance? java.net.ProxySelector opts-or-fn) opts-or-fn
+    (map? opts-or-fn) (i/->ProxySelector opts-or-fn)
+    :else (i/fn->ProxySelector opts-or-fn)))
 
 (defn ->Proxy
   "Constructs a `java.net.Proxy`.
