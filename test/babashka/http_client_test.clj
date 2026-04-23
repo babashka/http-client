@@ -3,6 +3,7 @@
    [babashka.fs :as fs]
    [babashka.http-client :as http]
    [babashka.http-client.interceptors :as i]
+   [babashka.http-client.internal :as internal]
    [babashka.http-client.internal.version :as iv]
    [borkdude.deflet :refer [deflet]]
    [cheshire.core :as json]
@@ -512,16 +513,26 @@
   (is (instance? java.net.ProxySelector
                  (http/->ProxySelector {:host "https://clojure.org"
                                         :port 1337})))
-  (let [complex-proxy-selector (http/->ProxySelector [(http/proxy-exclude-urls #{"localhost"})
-                                                      (http/proxy-scheme "http" {:host "example.org" :port 8080 :type :http})])]
+  (let [^java.net.ProxySelector complex-proxy-selector (http/->ProxySelector (fn [^java.net.URI uri]
+                                                       (when (= (.getScheme uri) "http")
+                                                         {:host "http://www.example.org"
+                                                          :port 128
+                                                          :type :http})))]
     (is (instance? java.net.ProxySelector complex-proxy-selector))
     (let [proxies-for-http (.select complex-proxy-selector (java.net.URI. "http://www.example.org"))
-          excluded-proxies (.select complex-proxy-selector (java.net.URI. "http://localhost"))
           proxies-for-https (.select complex-proxy-selector (java.net.URI. "https://www.example.org"))]
-      (is (= (count proxies-for-http) (count proxies-for-https) (count excluded-proxies) 1))
+      (is (= (count proxies-for-http) (count proxies-for-https) 1))
       (is (= (.type (get proxies-for-http 0)) java.net.Proxy$Type/HTTP))
-      (is (= (.type (get excluded-proxies 0)) java.net.Proxy$Type/DIRECT))
-      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT)))))
+      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT))))
+  (let [environment-proxy-selector (internal/proxy-selector-from-curl-vars "" "https://www.example.org" "localhost")]
+    (is (instance? java.net.ProxySelector environment-proxy-selector))
+    (let [http-proxies (.select environment-proxy-selector (java.net.URI. "http://example.org/index.html"))
+          https-proxies (.select environment-proxy-selector (java.net.URI. "https://example.org/index.html"))
+          excluded-proxies (.select environment-proxy-selector (java.net.URI. "http://localhost:8080/do"))]
+      (is (= (count http-proxies) (count https-proxies) (count excluded-proxies)))
+      (is (= (get http-proxies 0) java.net.Proxy/NO_PROXY))
+      (is (= (get https-proxies 0) (http/->Proxy {:host "example.org" :type :http :port 443})))
+      (is (= (get excluded-proxies 0) java.net.Proxy/NO_PROXY)))))
 
 (deftest cookie-handler-test
   (testing "nil passthrough"
