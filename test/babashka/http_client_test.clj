@@ -513,6 +513,11 @@
   (is (instance? java.net.ProxySelector
                  (http/->ProxySelector {:host "https://clojure.org"
                                         :port 1337})))
+  ;; Check passthrough behavior.
+  (is (instance? java.net.ProxySelector
+                 (http/->ProxySelector
+                  (http/->ProxySelector {:host "https://clojure.org"
+                                         :port 1337}))))
   (let [^java.net.ProxySelector complex-proxy-selector (http/->ProxySelector (fn [^java.net.URI uri]
                                                        (when (= (.getScheme uri) "http")
                                                          {:host "http://www.example.org"
@@ -531,7 +536,7 @@
           excluded-proxies (.select environment-proxy-selector (java.net.URI. "http://localhost:8080/do"))]
       (is (= (count http-proxies) (count https-proxies) (count excluded-proxies)))
       (is (= (get http-proxies 0) java.net.Proxy/NO_PROXY))
-      (is (= (get https-proxies 0) (http/->Proxy {:host "example.org" :type :http :port 443})))
+      (is (= (get https-proxies 0) (http/->Proxy {:host "www.example.org" :type :http :port 443})))
       (is (= (get excluded-proxies 0) java.net.Proxy/NO_PROXY)))))
 
 (deftest cookie-handler-test
