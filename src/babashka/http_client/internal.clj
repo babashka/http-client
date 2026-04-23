@@ -138,50 +138,46 @@
            (fn [entry] (str/trim entry))
            (str/split value #",")))))
 
+(defn- uri-port-with-default [^URI uri]
+  (if (not= (.getPort uri) -1)
+    (.getPort uri)
+    (cond
+      (= (.getScheme uri) "http") 80
+      (= (.getScheme uri) "https") 443
+      :else -1)))
+
 (defn- env->proxy-opts [value]
-  (when value
+  (when (and value (not (str/blank? value)))
     (let [uri (java.net.URI. value)
-          base-opts {:host (.getHost uri) :port (.getPort uri)}]
+          base-opts {:host (.getHost uri) :port (uri-port-with-default uri)}]
       (condp contains? (.getScheme uri)
         #{"http" "https"} (assoc base-opts :type :http)
         #{"socks4" "socks4a" "socks5" "socks5a"} (assoc base-opts :type :socks)))))
 
-(defn make-proxy-selector [handlers]
+(defn fn->ProxySelector [proxy-fn]
   (proxy [java.net.ProxySelector] []
     (connectFailed [_ _ _])
     (select [^URI uri]
-      (loop [[[pred proxy] & rest] handlers]
-        (cond
-          (nil? pred)
-          [java.net.Proxy/NO_PROXY]
-          (pred uri)
-          [proxy]
-          :else
-          (recur rest))))))
+      ;; Only allow the proxy function to return a single proxy.
+      ;; I don't really see the use case for multiple.
+      [(if-let [proxy-opts (proxy-fn uri)]
+        (->Proxy proxy-opts)
+        java.net.Proxy/NO_PROXY)])))
 
-(defn proxy-scheme [scheme proxy-opts]
-  [(fn [^java.net.URI uri]
-     (= (.getScheme uri) scheme))
-   (->Proxy proxy-opts)])
+(defn- proxy-scheme [scheme proxy-opts]
+  (fn [^java.net.URI uri]
+    (when (= (.getScheme uri) scheme)
+      (->Proxy proxy-opts))))
 
-(defn proxy-exclude-urls [excluded-urls]
-  [(fn [^java.net.URI uri]
-     (some (fn [excluded-url] (str/ends-with? (.getHost uri) excluded-url)) excluded-urls))
-   java.net.Proxy/NO_PROXY])
+(defn- proxy-exclude-urls [excluded-urls]
+  (fn [^java.net.URI uri]
+    (when (some (fn [excluded-url] (str/ends-with? (.getHost uri) excluded-url)) excluded-urls)
+      java.net.Proxy/NO_PROXY)))
 
-(defn proxy-all [proxy-opts]
-  [(constantly true)
-   (->Proxy proxy-opts)])
-
-(defn proxy-host [hostname proxy-opts]
-  [(fn [^java.net.URI uri]
-     (= (.getHost uri) hostname))
-   (->Proxy proxy-opts)])
-
-(defn proxy-selector-from-env-vars []
-  (let [http-proxy-value (env->proxy-opts (case-insensitive-env-var "http_proxy"))
-        https-proxy-value (env->proxy-opts (case-insensitive-env-var "https_proxy"))
-        no-proxy-value (no-proxy-value (case-insensitive-env-var "no_proxy"))]
+(defn proxy-selector-from-curl-vars [http-proxy-env https-proxy-env no-proxy-env]
+  (let [http-proxy-value (env->proxy-opts http-proxy-env)
+        https-proxy-value (env->proxy-opts https-proxy-env)
+        no-proxy-value (no-proxy-value no-proxy-env)]
     (cond
       ;; No proxy defined
       (and (nil? http-proxy-value) (nil? https-proxy-value))
@@ -190,9 +186,19 @@
       (= no-proxy-value :all)
       nil
       :else
-      (make-proxy-selector [(proxy-exclude-urls no-proxy-value)
-                             (proxy-scheme "http" (or http-proxy-value https-proxy-value))
-                             (proxy-scheme "https" (or https-proxy-value http-proxy-value))]))))
+      (fn->ProxySelector (fn [^java.net.URI uri]
+                           (some (fn [proxy-fn] (proxy-fn uri))
+                                 (cond-> []
+                                   no-proxy-value (conj (proxy-exclude-urls no-proxy-value))
+                                   https-proxy-value (conj (proxy-scheme "https" https-proxy-value))
+                                   http-proxy-value (conj (proxy-scheme "http" http-proxy-value)))))))))
+
+(defn proxy-selector-from-env []
+  (proxy-selector-from-curl-vars
+   (case-insensitive-env-var "http_proxy")
+   (case-insensitive-env-var "https_proxy")
+   (case-insensitive-env-var "no_proxy")))
+
 (defn ->Authenticator
   [v]
   (if (instance? Authenticator v)
@@ -278,7 +284,8 @@
                        :user-agent (str "babashka.http-client/" iv/version)}}})
 
 (def default-client
-  (delay (client default-client-opts)))
+  (let [default-proxy-selector (proxy-selector-from-env)]
+    (delay (client (merge default-client-opts (when default-proxy-selector {:proxy default-proxy-selector}))))))
 
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
