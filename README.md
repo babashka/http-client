@@ -63,8 +63,8 @@ inspired by libraries like [clj-http](https://github.com/dakrone/clj-http).
 Simple `GET` request:
 
 ``` clojure
-(http/get "https://httpstat.us/200")
-;;=> {:status 200, :body "200 OK", :headers { ... }}
+(http/get "https://httpbin.org/get")
+;;=> {:status 200, :body "{ ... }", :headers { ... }}
 ```
 
 ### Headers
@@ -72,8 +72,8 @@ Simple `GET` request:
 Passing headers:
 
 ``` clojure
-(def resp (http/get "https://httpstat.us/200" {:headers {"Accept" "application/json"}}))
-(json/parse-string (:body resp)) ;;=> {"code" 200, "description" "OK"}
+(def resp (http/get "https://httpbin.org/headers" {:headers {"Accept" "application/json"}}))
+(get-in (json/parse-string (:body resp)) ["headers" "Accept"]) ;;=> "application/json"
 ```
 
 Headers may be provided as keywords as well:
@@ -235,9 +235,9 @@ Then use the custom client with HTTP requests:
 The default client is configured to always follow redirects. To opt out of this behaviour, construct a custom client:
 
 ```clojure
-(:status (http/get "https://httpstat.us/302" {:client (http/client {:follow-redirects :never})}))
+(:status (http/get "https://httpbin.org/redirect-to?url=https://www.clojure.org" {:client (http/client {:follow-redirects :never})}))
 ;; => 302
-(:status (http/get "https://httpstat.us/302" {:client (http/client {:follow-redirects :always})}))
+(:status (http/get "https://httpbin.org/redirect-to?url=https://www.clojure.org" {:client (http/client {:follow-redirects :always})}))
 ;; => 200
 ```
 
@@ -246,7 +246,7 @@ The default client is configured to always follow redirects. To opt out of this 
 An `ExceptionInfo` will be thrown for all HTTP response status codes other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`.
 
 ```clojure
-user=> (http/get "https://httpstat.us/404")
+user=> (http/get "https://httpbin.org/status/404")
 Execution error (ExceptionInfo) at babashka.http-client.interceptors/fn (interceptors.clj:194).
 Exceptional status code: 404
  ```
@@ -254,7 +254,7 @@ Exceptional status code: 404
 To opt out of an exception being thrown, set `:throw` to false.
 
 ```clojure
-(:status (http/get "https://httpstat.us/404" {:throw false}))
+(:status (http/get "https://httpbin.org/status/404" {:throw false}))
 ;;=> 404
 ```
 
@@ -317,12 +317,12 @@ An example is shown in this test:
         interceptors (cons json-interceptor interceptors/default-interceptors)
         ]
     (testing "interceptors on request"
-      (let [resp (http/get "https://httpstat.us/200"
+      (let [resp (http/get "https://httpbin.org/get"
                              {:interceptors interceptors
                               :as :json})]
-        (is (= 200 (-> resp :body
-                       ;; response as JSON
-                       :code)))))))
+        (is (= "https://httpbin.org/get" (-> resp :body
+                                             ;; response as JSON
+                                             :url)))))))
 ```
 
 A `:request` function is executed when the request is built and the `:response`
@@ -400,7 +400,7 @@ Two different timeouts can be set:
 Alternatively you can use `:async` + `deref` with a timeout + default value:
 
 ```
-(let [resp (http/get "https://httpstat.us/200?sleep=5000" {:async true})] (deref resp 1000 ::too-late))
+(let [resp (http/get "https://httpbin.org/delay/5" {:async true})] (deref resp 1000 ::too-late))
 ;;=> :user/too-late
 ```
 
