@@ -337,11 +337,11 @@
     (is (-> resp :body (json/parse-string true) :items))))
 
 (deftest default-client-test
-  (let [resp (http/get "https://postman-echo.com/get")
+  (let [resp (http/get "https://httpbin.org/get")
         headers (-> resp :body (json/parse-string true) :headers)]
-    (is (= "*/*" (:accept headers)))
-    (is (= "gzip, deflate" (:accept-encoding headers)))
-    (is (= (str "babashka.http-client/" iv/version) (:user-agent headers)))))
+    (is (= "*/*" (:Accept headers)))
+    (is (= "gzip,deflate" (str/replace (:Accept-Encoding headers) " " "")))
+    (is (= (str "babashka.http-client/" iv/version) (:User-Agent headers)))))
 
 (deftest client-request-opts-test
   (let [client (http/client {:request {:headers {"x-my-header" "yolo"}}})
