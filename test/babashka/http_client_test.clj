@@ -490,16 +490,7 @@
           proxies-for-https (.select complex-proxy-selector (java.net.URI. "https://www.example.org"))]
       (is (= (count proxies-for-http) (count proxies-for-https) 1))
       (is (= (.type (get proxies-for-http 0)) java.net.Proxy$Type/HTTP))
-      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT))))
-  (let [environment-proxy-selector (internal/proxy-selector-from-curl-vars "" "https://www.example.org" "localhost")]
-    (is (instance? java.net.ProxySelector environment-proxy-selector))
-    (let [http-proxies (.select environment-proxy-selector (java.net.URI. "http://example.org/index.html"))
-          https-proxies (.select environment-proxy-selector (java.net.URI. "https://example.org/index.html"))
-          excluded-proxies (.select environment-proxy-selector (java.net.URI. "http://localhost:8080/do"))]
-      (is (= (count http-proxies) (count https-proxies) (count excluded-proxies)))
-      (is (= (get http-proxies 0) java.net.Proxy/NO_PROXY))
-      (is (= (get https-proxies 0) (http/->Proxy {:host "www.example.org" :type :http :port 443})))
-      (is (= (get excluded-proxies 0) java.net.Proxy/NO_PROXY)))))
+      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT)))))
 
 (deftest cookie-handler-test
   (testing "nil passthrough"

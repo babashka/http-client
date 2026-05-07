@@ -122,38 +122,6 @@
         (and host port type)
         (java.net.Proxy. (->proxy-type type) (java.net.InetSocketAddress. ^String host ^long port))))))
 
-(defn- case-insensitive-env-var [name]
-  (or (System/getenv (str/lower-case name))
-      (System/getenv (str/upper-case name))))
-
-(defn- no-proxy-value [value]
-  (cond
-    (nil? value)
-    #{}
-    (= value "*")
-    :all
-    :else
-    (into #{}
-          (map
-           (fn [entry] (str/trim entry))
-           (str/split value #",")))))
-
-(defn- uri-port-with-default [^URI uri]
-  (if (not= (.getPort uri) -1)
-    (.getPort uri)
-    (cond
-      (= (.getScheme uri) "http") 80
-      (= (.getScheme uri) "https") 443
-      :else -1)))
-
-(defn- env->proxy-opts [value]
-  (when (and value (not (str/blank? value)))
-    (let [uri (java.net.URI. value)
-          base-opts {:host (.getHost uri) :port (uri-port-with-default uri)}]
-      (condp contains? (.getScheme uri)
-        #{"http" "https"} (assoc base-opts :type :http)
-        #{"socks4" "socks4a" "socks5" "socks5a"} (assoc base-opts :type :socks)))))
-
 (defn fn->ProxySelector [proxy-fn]
   (proxy [java.net.ProxySelector] []
     (connectFailed [_ _ _])
@@ -163,41 +131,6 @@
       [(if-let [proxy-opts (proxy-fn uri)]
         (->Proxy proxy-opts)
         java.net.Proxy/NO_PROXY)])))
-
-(defn- proxy-scheme [scheme proxy-opts]
-  (fn [^java.net.URI uri]
-    (when (= (.getScheme uri) scheme)
-      (->Proxy proxy-opts))))
-
-(defn- proxy-exclude-urls [excluded-urls]
-  (fn [^java.net.URI uri]
-    (when (some (fn [excluded-url] (str/ends-with? (.getHost uri) excluded-url)) excluded-urls)
-      java.net.Proxy/NO_PROXY)))
-
-(defn proxy-selector-from-curl-vars [http-proxy-env https-proxy-env no-proxy-env]
-  (let [http-proxy-value (env->proxy-opts http-proxy-env)
-        https-proxy-value (env->proxy-opts https-proxy-env)
-        no-proxy-value (no-proxy-value no-proxy-env)]
-    (cond
-      ;; No proxy defined
-      (and (nil? http-proxy-value) (nil? https-proxy-value))
-      nil
-      ;; Star in no_proxy variable
-      (= no-proxy-value :all)
-      nil
-      :else
-      (fn->ProxySelector (fn [^java.net.URI uri]
-                           (some (fn [proxy-fn] (proxy-fn uri))
-                                 (cond-> []
-                                   no-proxy-value (conj (proxy-exclude-urls no-proxy-value))
-                                   https-proxy-value (conj (proxy-scheme "https" https-proxy-value))
-                                   http-proxy-value (conj (proxy-scheme "http" http-proxy-value)))))))))
-
-(defn proxy-selector-from-env []
-  (proxy-selector-from-curl-vars
-   (case-insensitive-env-var "http_proxy")
-   (case-insensitive-env-var "https_proxy")
-   (case-insensitive-env-var "no_proxy")))
 
 (defn ->Authenticator
   [v]
