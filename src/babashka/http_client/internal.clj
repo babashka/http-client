@@ -217,8 +217,7 @@
                        :user-agent (str "babashka.http-client/" iv/version)}}})
 
 (def default-client
-  (let [default-proxy-selector (proxy-selector-from-env)]
-    (delay (client (merge default-client-opts (when default-proxy-selector {:proxy default-proxy-selector}))))))
+  (delay (client default-client-opts)))
 
 (defn- method-keyword->str [method]
   (str/upper-case (name method)))
