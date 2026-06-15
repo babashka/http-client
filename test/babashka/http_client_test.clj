@@ -528,7 +528,15 @@
           proxies-for-https (.select complex-proxy-selector (java.net.URI. "https://www.example.org"))]
       (is (= (count proxies-for-http) (count proxies-for-https) 1))
       (is (= (.type (get proxies-for-http 0)) java.net.Proxy$Type/HTTP))
-      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT)))))
+      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT))))
+  (let [^java.net.ProxySelector static-proxy-selector (http/->ProxySelector
+                                                       {:host "127.0.0.1"
+                                                        :port 8081
+                                                        :type :socks})]
+    (let [selected-proxies (.select static-proxy-selector (java.net.URI. "http://www.example.org"))]
+      (is (= (count selected-proxies) 1))
+      (is (= (.type (selected-proxies 0)) java.net.Proxy$Type/SOCKS))
+      (is (= (.address (selected-proxies 0)) (java.net.InetSocketAddress. "127.0.0.1" 8081))))))
 
 (deftest cookie-handler-test
   (testing "nil passthrough"
