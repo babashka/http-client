@@ -7,30 +7,17 @@
   i/default-client-opts)
 
 (defn ->ProxySelector
-  "Constructs a `java.net.ProxySelector`. Can either take a map of `:host` and `:port` actions, or a proxy
-  creation function that takes a java.net.URI and returns a proxy configuration for ->Proxy.
+  "Constructs a `java.net.ProxySelector`. Can either take a map of `:host` and `:port` and `type` options or a proxy
+  creation function that takes a java.net.URI and returns a map of these parameters for creating a proxy dynamically.
 
   Options:
   * `:host` - string
   * `:port` - long
-  Proxy function:
-  * `fn`: A one-argument function receiving a java.net.URI argument and returning a proxy configuration for ->Proxy or nil
-          (meaning don't use a proxy)."
+  * `:type` - `:direct` (don't use a proxy, host and port will be ignored), `:socks` (socks proxy) or `:http` (HTTP proxy, default value)."
   [opts-or-fn]
-  (cond
-    (instance? java.net.ProxySelector opts-or-fn) opts-or-fn
-    (map? opts-or-fn) (i/->ProxySelector opts-or-fn)
-    :else (i/fn->ProxySelector opts-or-fn)))
-
-(defn ->Proxy
-  "Constructs a `java.net.Proxy`.
-
-  Options:
-  * `:host` - string
-  * `:port` - long
-  * `:type` - One of `:direct` (no proxy), `:socks` (socks proxy) or `:http` (application level proxy)."
-  [opts]
-  (i/->Proxy opts))
+  (if (instance? java.net.ProxySelector opts-or-fn)
+    opts-or-fn
+    (i/->ProxySelector opts-or-fn)))
 
 (defn ->SSLContext
   "Constructs a `javax.net.ssl.SSLContext`.

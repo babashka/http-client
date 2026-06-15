@@ -103,34 +103,41 @@
                trust-managers
                (SecureRandom.))))))
 
-(defn ->ProxySelector
-  [opts]
-  (if (instance? java.net.ProxySelector opts)
-    opts
-    (let [{:keys [host port]} opts]
-      (cond (and host port)
-            (java.net.ProxySelector/of (java.net.InetSocketAddress. ^String host ^long port))))))
-
 (defn ->Proxy
   [opts]
   (if (instance? java.net.Proxy opts)
     opts
-    (let [{:keys [host port type]} opts]
+    (let [{:keys [host port type] :or {type :http}} opts]
       (cond
         (= type :direct)
         java.net.Proxy/NO_PROXY
         (and host port type)
-        (java.net.Proxy. (->proxy-type type) (java.net.InetSocketAddress. ^String host ^long port))))))
+        (java.net.Proxy. (->proxy-type type) (java.net.InetSocketAddress. ^String host ^long port))
+        :else
+        (throw (ex-info "Don't know how to create proxy from options." {:opts opts}))))))
 
-(defn fn->ProxySelector [proxy-fn]
-  (proxy [java.net.ProxySelector] []
-    (connectFailed [_ _ _])
-    (select [^URI uri]
-      ;; Only allow the proxy function to return a single proxy.
-      ;; I don't really see the use case for multiple.
-      [(if-let [proxy-opts (proxy-fn uri)]
-        (->Proxy proxy-opts)
-        java.net.Proxy/NO_PROXY)])))
+(defn ->ProxySelector
+  [opts-or-fn]
+  (cond
+    (instance? java.net.ProxySelector opts-or-fn)
+    opts-or-fn
+    (fn? opts-or-fn)
+    ;; Create a dynamic proxy selector.
+    (proxy [java.net.ProxySelector] []
+      (connectFailed [_ _ _])
+      (select [^URI uri]
+        ;; Only allow the proxy function to return a single proxy.
+        ;; Returning multiple is currently not supported.
+        [(if-let [proxy-values (opts-or-fn uri)]
+           (->Proxy proxy-values)
+           java.net.Proxy/NO_PROXY)]))
+    :else
+    ;; Return a static proxy configuration that always returns the same proxy.
+    (let [static-proxy (->Proxy opts-or-fn)]
+      (proxy [java.net.ProxySelector] []
+        (connectFailed [_ _ _])
+        (select [^URI _uri]
+          [static-proxy])))))
 
 (defn ->Authenticator
   [v]
