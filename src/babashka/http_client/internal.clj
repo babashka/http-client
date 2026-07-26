@@ -97,13 +97,43 @@
                trust-managers
                (SecureRandom.))))))
 
-(defn ->ProxySelector
+(defn- ->Proxy
   [opts]
-  (if (instance? java.net.ProxySelector opts)
+  (if (instance? java.net.Proxy opts)
     opts
-    (let [{:keys [host port]} opts]
-      (cond (and host port)
-            (java.net.ProxySelector/of (java.net.InetSocketAddress. ^String host ^long port))))))
+    (let [{:keys [host port type] :or {type :http}} opts]
+      (case type
+        :direct java.net.Proxy/NO_PROXY
+        :http (if (and host port)
+                (java.net.Proxy. java.net.Proxy$Type/HTTP
+                                 (java.net.InetSocketAddress. ^String host ^long port))
+                (throw (ex-info "Proxy needs both :host and :port." {:opts opts})))
+        (throw (ex-info (str "Unsupported proxy type: " (pr-str type)
+                             ". java.net.http connects through HTTP proxies only.")
+                        {:opts opts}))))))
+
+(defn ->ProxySelector
+  [opts-or-fn]
+  (cond
+    (instance? java.net.ProxySelector opts-or-fn)
+    opts-or-fn
+    (fn? opts-or-fn)
+    ;; Create a dynamic proxy selector.
+    (proxy [java.net.ProxySelector] []
+      (connectFailed [_ _ _])
+      (select [^URI uri]
+        ;; Only allow the proxy function to return a single proxy.
+        ;; Returning multiple is currently not supported.
+        [(if-let [proxy-values (opts-or-fn uri)]
+           (->Proxy proxy-values)
+           java.net.Proxy/NO_PROXY)]))
+    :else
+    ;; Return a static proxy configuration that always returns the same proxy.
+    (let [static-proxy (->Proxy opts-or-fn)]
+      (proxy [java.net.ProxySelector] []
+        (connectFailed [_ _ _])
+        (select [^URI _uri]
+          [static-proxy])))))
 
 (defn ->Authenticator
   [v]

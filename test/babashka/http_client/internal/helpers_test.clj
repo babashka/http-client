@@ -4,5 +4,5 @@
    [clojure.test :as t]))
 
 (t/deftest ->uri-tests
-  (let [uri (h/->uri {:scheme "https" :host "example.com" :path "/foo"})]
+  (let [^java.net.URI uri (h/->uri {:scheme "https" :host "example.com" :path "/foo"})]
     (t/is (= (.getPort uri) -1))))
