@@ -377,7 +377,8 @@
   (let [resp (http/get "http://localhost:12233/get")
         headers (-> resp :body (json/parse-string true) :headers)]
     (is (= "*/*" (:accept headers)))
-    (is (= "gzip,deflate" (str/replace (:accept-encoding headers) " " "")))
+    ;; repeated header values are joined with "," or "\n" depending on the JDK
+    (is (= ["gzip" "deflate"] (str/split (:accept-encoding headers) #"[,\s]+")))
     (is (= (str "babashka.http-client/" iv/version) (:user-agent headers)))))
 
 (deftest client-request-opts-test
