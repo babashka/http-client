@@ -53,7 +53,7 @@
                              :headers {"location" (second (str/split (str (:query-string req)) #"url="))}
                              :body ""}
              ;; like httpbingo.org/redirect/n, hops to /get via /redirect/(dec n)
-             (if-let [n (some-> (re-find #"^/redirect/(\d+)$" uri) second parse-long)]
+             (if-let [n (some-> (re-find #"^/redirect/(\d+)$" uri) second Long/parseLong)]
                {:status 302
                 :headers {"location" (if (> n 1)
                                        (str "/redirect/" (dec n))
