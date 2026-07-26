@@ -511,32 +511,44 @@
 
 (deftest proxy-selector
   (is (instance? java.net.ProxySelector
-                 (http/->ProxySelector {:host "https://clojure.org"
+                 (http/->ProxySelector {:host "clojure.org"
                                         :port 1337})))
-  ;; Check passthrough behavior.
-  (is (instance? java.net.ProxySelector
-                 (http/->ProxySelector
-                  (http/->ProxySelector {:host "https://clojure.org"
-                                         :port 1337}))))
-  (let [^java.net.ProxySelector complex-proxy-selector (http/->ProxySelector (fn [^java.net.URI uri]
-                                                       (when (= (.getScheme uri) "http")
-                                                         {:host "http://www.example.org"
-                                                          :port 128
-                                                          :type :http})))]
-    (is (instance? java.net.ProxySelector complex-proxy-selector))
-    (let [proxies-for-http (.select complex-proxy-selector (java.net.URI. "http://www.example.org"))
-          proxies-for-https (.select complex-proxy-selector (java.net.URI. "https://www.example.org"))]
+  (testing "a ProxySelector is passed through"
+    (is (instance? java.net.ProxySelector
+                   (http/->ProxySelector
+                    (http/->ProxySelector {:host "clojure.org"
+                                           :port 1337})))))
+  (testing "a function selects a proxy per request"
+    (let [^java.net.ProxySelector selector
+          (http/->ProxySelector (fn [^java.net.URI uri]
+                                  (when (= (.getScheme uri) "http")
+                                    {:host "www.example.org"
+                                     :port 128})))
+          proxies-for-http (.select selector (java.net.URI. "http://www.example.org"))
+          proxies-for-https (.select selector (java.net.URI. "https://www.example.org"))]
       (is (= (count proxies-for-http) (count proxies-for-https) 1))
-      (is (= (.type (get proxies-for-http 0)) java.net.Proxy$Type/HTTP))
-      (is (= (.type (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT))))
-  (let [^java.net.ProxySelector static-proxy-selector (http/->ProxySelector
-                                                       {:host "127.0.0.1"
-                                                        :port 8081
-                                                        :type :socks})]
-    (let [selected-proxies (.select static-proxy-selector (java.net.URI. "http://www.example.org"))]
-      (is (= (count selected-proxies) 1))
-      (is (= (.type (selected-proxies 0)) java.net.Proxy$Type/SOCKS))
-      (is (= (.address (selected-proxies 0)) (java.net.InetSocketAddress. "127.0.0.1" 8081))))))
+      (is (= (.type ^java.net.Proxy (get proxies-for-http 0)) java.net.Proxy$Type/HTTP))
+      (is (= (.address ^java.net.Proxy (get proxies-for-http 0))
+             (java.net.InetSocketAddress. "www.example.org" 128)))
+      (testing "returning nil connects directly"
+        (is (= (.type ^java.net.Proxy (get proxies-for-https 0)) java.net.Proxy$Type/DIRECT)))))
+  (testing "a map always selects the same proxy"
+    (let [^java.net.ProxySelector selector (http/->ProxySelector {:host "127.0.0.1"
+                                                                  :port 8081})
+          selected (.select selector (java.net.URI. "http://www.example.org"))]
+      (is (= (count selected) 1))
+      (is (= (.type ^java.net.Proxy (selected 0)) java.net.Proxy$Type/HTTP))
+      (is (= (.address ^java.net.Proxy (selected 0)) (java.net.InetSocketAddress. "127.0.0.1" 8081)))))
+  (testing ":direct ignores host and port"
+    (let [^java.net.ProxySelector selector (http/->ProxySelector {:type :direct})]
+      (is (= (.type ^java.net.Proxy ((.select selector (java.net.URI. "http://www.example.org")) 0))
+             java.net.Proxy$Type/DIRECT))))
+  (testing "java.net.http supports HTTP proxies only"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Unsupported proxy type"
+                          (http/->ProxySelector {:host "127.0.0.1" :port 8081 :type :socks}))))
+  (testing "a proxy needs host and port"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #":host and :port"
+                          (http/->ProxySelector {:host "127.0.0.1"})))))
 
 (deftest cookie-handler-test
   (testing "nil passthrough"

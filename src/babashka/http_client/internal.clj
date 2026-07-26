@@ -36,12 +36,6 @@
     :never HttpClient$Redirect/NEVER
     :normal HttpClient$Redirect/NORMAL))
 
-(defn- ->proxy-type [type]
-  (case type
-    :direct java.net.Proxy$Type/DIRECT
-    :socks java.net.Proxy$Type/SOCKS
-    :http java.net.Proxy$Type/HTTP))
-
 (defn- version-keyword->version-enum [version]
   (case version
     :http1.1 HttpClient$Version/HTTP_1_1
@@ -108,13 +102,15 @@
   (if (instance? java.net.Proxy opts)
     opts
     (let [{:keys [host port type] :or {type :http}} opts]
-      (cond
-        (= type :direct)
-        java.net.Proxy/NO_PROXY
-        (and host port type)
-        (java.net.Proxy. (->proxy-type type) (java.net.InetSocketAddress. ^String host ^long port))
-        :else
-        (throw (ex-info "Don't know how to create proxy from options." {:opts opts}))))))
+      (case type
+        :direct java.net.Proxy/NO_PROXY
+        :http (if (and host port)
+                (java.net.Proxy. java.net.Proxy$Type/HTTP
+                                 (java.net.InetSocketAddress. ^String host ^long port))
+                (throw (ex-info "Proxy needs both :host and :port." {:opts opts})))
+        (throw (ex-info (str "Unsupported proxy type: " (pr-str type)
+                             ". java.net.http connects through HTTP proxies only.")
+                        {:opts opts}))))))
 
 (defn ->ProxySelector
   [opts-or-fn]

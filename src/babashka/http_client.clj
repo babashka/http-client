@@ -7,13 +7,15 @@
   i/default-client-opts)
 
 (defn ->ProxySelector
-  "Constructs a `java.net.ProxySelector`. Can either take a map of `:host` and `:port` and `type` options or a proxy
-  creation function that takes a java.net.URI and returns a map of these parameters for creating a proxy dynamically.
+  "Constructs a `java.net.ProxySelector` from a map of options, or from a
+  function of a `java.net.URI` returning such a map to select a proxy per
+  request. The function may return `nil` to connect directly.
 
   Options:
   * `:host` - string
   * `:port` - long
-  * `:type` - `:direct` (don't use a proxy, host and port will be ignored), `:socks` (socks proxy) or `:http` (HTTP proxy, default value)."
+  * `:type` - `:http` (default) or `:direct`, which ignores `:host` and `:port`.
+    `java.net.http` connects through HTTP proxies only."
   [opts-or-fn]
   (if (instance? java.net.ProxySelector opts-or-fn)
     opts-or-fn

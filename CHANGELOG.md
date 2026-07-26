@@ -4,7 +4,7 @@ Babashka [http-client](https://github.com/babashka/http-client): HTTP client for
 
 ## Unreleased
 
-- [#80](https://github.com/babashka/http-client/issues/80): add idiomatic proxy configuration functionality
+- [#80](https://github.com/babashka/http-client/issues/80): accept a function of the request URI in `:proxy` to select a proxy per request ([@jeeger](https://github.com/jeeger))
 
 ## 0.4.23 (2025-06-06)
 
