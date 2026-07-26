@@ -19,25 +19,61 @@
 
 (def !server (atom nil))
 
+(defn- json-response [m]
+  {:status 200
+   :headers {"content-type" "application/json"}
+   :body (json/generate-string m)})
+
+(defn- gzip [^String s]
+  (let [baos (java.io.ByteArrayOutputStream.)]
+    (with-open [out (java.util.zip.GZIPOutputStream. baos)]
+      (.write out (.getBytes s "UTF-8")))
+    (.toByteArray baos)))
+
 (defn run-server []
   (let [server
         (server/run-server
          (fn [{:keys [uri body] :as req}]
-           (let [status (Long/valueOf (subs uri 1))
-                 json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
-             (case status
-               200 (let [body (if json?
-                                (json/generate-string {:code 200})
-                                (if body body
-                                    "200 OK"))]
-                     {:status 200
-                      :body body})
-               404 {:status 404
-                    :body "404 Not Found"}
-               302 {:status 302
-                    :headers {"location" "/200"}}
-               {:status status
-                :body (str status)})))
+           (case uri
+             ;; echoes the headers the client sent, like httpbin.org/get
+             "/get" (json-response {:headers (:headers req)})
+             ;; like httpbin.org/bearer
+             "/bearer" (if-let [token (some->> (get (:headers req) "authorization")
+                                               (re-find #"^Bearer (.+)$")
+                                               second)]
+                         (json-response {:authenticated true :token token})
+                         {:status 401 :body "401 Unauthorized"})
+             ;; always responds gzipped, so decompression is exercised
+             "/gzip" {:status 200
+                      :headers {"content-type" "application/json"
+                                "content-encoding" "gzip"}
+                      :body (gzip (json/generate-string {:items [{:name "http-client"}]}))}
+             ;; like httpbin.org/redirect-to?url=...
+             "/redirect-to" {:status 302
+                             :headers {"location" (second (str/split (str (:query-string req)) #"url="))}
+                             :body ""}
+             ;; like httpbingo.org/redirect/n, hops to /get via /redirect/(dec n)
+             (if-let [n (some-> (re-find #"^/redirect/(\d+)$" uri) second Long/parseLong)]
+               {:status 302
+                :headers {"location" (if (> n 1)
+                                       (str "/redirect/" (dec n))
+                                       "/get")}
+                :body ""}
+               (let [status (Long/valueOf (subs uri 1))
+                   json? (some-> req :headers (get "accept") (str/includes? "application/json"))]
+               (case status
+                 200 (let [body (if json?
+                                  (json/generate-string {:code 200})
+                                  (if body body
+                                      "200 OK"))]
+                       {:status 200
+                        :body body})
+                 404 {:status 404
+                      :body "404 Not Found"}
+                 302 {:status 302
+                      :headers {"location" "/200"}}
+                 {:status status
+                  :body (str status)})))))
          {:port 12233
           :legacy-return-value? false})]
     (reset! !server server)))
@@ -193,7 +229,7 @@
 
 (deftest oauth-token-test
   (let [token "qwertyuiop"
-        response (http/get "https://httpbin.org/bearer" {:oauth-token token})
+        response (http/get "http://localhost:12233/bearer" {:oauth-token token})
         resp-body (-> response :body (json/parse-string true))]
     (is (= 200 (:status response)))
     (is (:authenticated resp-body))
@@ -215,20 +251,20 @@
       (is (instance? java.net.URI (:uri response)))))
 
   (testing "response object with following redirect"
-    (let [response (http/get (str "https://httpbingo.org/redirect/" 2))
+    (let [response (http/get (str "http://localhost:12233/redirect/" 2))
           uri (:uri response)]
-      (is (= "https://httpbingo.org/get" (str uri)))
+      (is (= "http://localhost:12233/get" (str uri)))
       (is (map? response))
       (is (= 200 (:status response)))))
 
   (testing "response object without fully following redirects"
     ;; (System/getProperty "jdk.httpclient.redirects.retrylimit" "0")
-    (let [response (http/get "https://httpbin.org/redirect-to?url=https://www.httpbin.org"
+    (let [response (http/get "http://localhost:12233/redirect-to?url=https://www.example.org"
                              {:client (http/client {:follow-redirects :never})})]
       (is (map? response))
       (is (= 302 (:status response)))
       (is (= "" (:body response)))
-      (is (= "https://www.httpbin.org" (get-in response [:headers "location"])))
+      (is (= "https://www.example.org" (get-in response [:headers "location"])))
       (is (empty? (:redirects response))))))
 
 (deftest accept-header-test
@@ -332,16 +368,18 @@
       (is (= 404 (:status response))))))
 
 (deftest compressed-test
-  (let [resp (http/get "https://api.stackexchange.com/2.2/sites"
+  (let [resp (http/get "http://localhost:12233/gzip"
                        {:headers {"Accept-Encoding" ["gzip" "deflate"]}})]
+    (is (= "gzip" (get-in resp [:headers "content-encoding"])))
     (is (-> resp :body (json/parse-string true) :items))))
 
 (deftest default-client-test
-  (let [resp (http/get "https://httpbin.org/get")
+  (let [resp (http/get "http://localhost:12233/get")
         headers (-> resp :body (json/parse-string true) :headers)]
-    (is (= "*/*" (:Accept headers)))
-    (is (= "gzip,deflate" (str/replace (:Accept-Encoding headers) " " "")))
-    (is (= (str "babashka.http-client/" iv/version) (:User-Agent headers)))))
+    (is (= "*/*" (:accept headers)))
+    ;; repeated header values are joined with "," or "\n" depending on the JDK
+    (is (= ["gzip" "deflate"] (str/split (:accept-encoding headers) #"[,\s]+")))
+    (is (= (str "babashka.http-client/" iv/version) (:user-agent headers)))))
 
 (deftest client-request-opts-test
   (let [client (http/client {:request {:headers {"x-my-header" "yolo"}}})
