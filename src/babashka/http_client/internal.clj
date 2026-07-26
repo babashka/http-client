@@ -97,7 +97,7 @@
                trust-managers
                (SecureRandom.))))))
 
-(defn ->Proxy
+(defn- ->Proxy
   [opts]
   (if (instance? java.net.Proxy opts)
     opts

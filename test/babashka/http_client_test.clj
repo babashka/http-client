@@ -3,7 +3,6 @@
    [babashka.fs :as fs]
    [babashka.http-client :as http]
    [babashka.http-client.interceptors :as i]
-   [babashka.http-client.internal :as internal]
    [babashka.http-client.internal.version :as iv]
    [borkdude.deflet :refer [deflet]]
    [cheshire.core :as json]
