@@ -4,6 +4,7 @@
   (:require
    [babashka.http-client.interceptors :as interceptors]
    [babashka.http-client.internal.helpers :as aux]
+   [babashka.http-client.internal.socks :as socks]
    [babashka.http-client.internal.version :as iv]
    [clojure.java.io :as io]
    [clojure.string :as str])
@@ -108,8 +109,17 @@
                 (java.net.Proxy. java.net.Proxy$Type/HTTP
                                  (java.net.InetSocketAddress. ^String host ^long port))
                 (throw (ex-info "Proxy needs both :host and :port." {:opts opts})))
+        ;; java.net.http speaks to HTTP proxies only, so SOCKS5 goes through a
+        ;; loopback HTTP proxy that tunnels over it.
+        (:socks :socks5)
+        (if (and host port)
+          (let [bridge (socks/bridge-address opts)]
+            (java.net.Proxy. java.net.Proxy$Type/HTTP
+                             (java.net.InetSocketAddress. ^String (:host bridge)
+                                                          ^long (:port bridge))))
+          (throw (ex-info "Proxy needs both :host and :port." {:opts opts})))
         (throw (ex-info (str "Unsupported proxy type: " (pr-str type)
-                             ". java.net.http connects through HTTP proxies only.")
+                             ". Supported types are :http, :socks5 and :direct.")
                         {:opts opts}))))))
 
 (defn ->ProxySelector

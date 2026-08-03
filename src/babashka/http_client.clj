@@ -14,8 +14,15 @@
   Options:
   * `:host` - string
   * `:port` - long
-  * `:type` - `:http` (default) or `:direct`, which ignores `:host` and `:port`.
-    `java.net.http` connects through HTTP proxies only."
+  * `:type` - `:http` (default), `:socks5`, or `:direct`, which ignores `:host`
+    and `:port`.
+  * `:user` and `:pass` - credentials for a `:socks5` proxy that asks for them.
+
+  `java.net.http` connects through HTTP proxies only. `:socks5` therefore
+  starts an HTTP proxy on 127.0.0.1 that tunnels over the SOCKS5 proxy. It
+  listens on an ephemeral port for the rest of the process lifetime and is
+  shared by every client with the same SOCKS5 options. Any process on the
+  loopback interface can use it."
   [opts-or-fn]
   (if (instance? java.net.ProxySelector opts-or-fn)
     opts-or-fn

@@ -4,6 +4,7 @@
    [babashka.http-client :as http]
    [babashka.http-client.interceptors :as i]
    [babashka.http-client.internal.version :as iv]
+   [babashka.http-client.test-socks-server :as socks]
    [borkdude.deflet :refer [deflet]]
    [cheshire.core :as json]
    [clojure.java.io :as io]
@@ -542,12 +543,112 @@
     (let [^java.net.ProxySelector selector (http/->ProxySelector {:type :direct})]
       (is (= (.type ^java.net.Proxy ((.select selector (java.net.URI. "http://www.example.org")) 0))
              java.net.Proxy$Type/DIRECT))))
-  (testing "java.net.http supports HTTP proxies only"
+  (testing "an unknown type is rejected"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #"Unsupported proxy type"
-                          (http/->ProxySelector {:host "127.0.0.1" :port 8081 :type :socks}))))
+                          (http/->ProxySelector {:host "127.0.0.1" :port 8081 :type :socks4}))))
   (testing "a proxy needs host and port"
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #":host and :port"
-                          (http/->ProxySelector {:host "127.0.0.1"})))))
+                          (http/->ProxySelector {:host "127.0.0.1"})))
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #":host and :port"
+                          (http/->ProxySelector {:host "127.0.0.1" :type :socks5})))))
+
+(defn- socks-client [socks-port]
+  (http/client {:proxy {:type :socks5 :host "127.0.0.1" :port socks-port}}))
+
+(deftest socks5-test
+  (testing "a request reaches the target through the SOCKS5 proxy"
+    (let [socks (socks/start)]
+      (try
+        (let [resp (http/get "http://localhost:12233/200"
+                             {:client (socks-client (:port socks))})]
+          (is (= 200 (:status resp)))
+          (is (str/includes? (:body resp) "200"))
+          (is (= [["localhost" 12233]] @(:targets socks))))
+        (finally ((:stop socks))))))
+  (testing "the request line is rewritten to origin form"
+    (let [socks (socks/start)]
+      (try
+        (is (= 404 (:status (http/get "http://localhost:12233/404"
+                                      {:client (socks-client (:port socks))
+                                       :throw false}))))
+        (finally ((:stop socks))))))
+  (testing "a POST body is forwarded"
+    (let [socks (socks/start)]
+      (try
+        (is (= "hello there" (:body (http/post "http://localhost:12233/200"
+                                               {:client (socks-client (:port socks))
+                                                :body "hello there"}))))
+        (finally ((:stop socks))))))
+  (testing "one client makes many requests"
+    (let [socks (socks/start)
+          client (socks-client (:port socks))]
+      (try
+        (is (= {200 20} (frequencies (repeatedly 20 #(:status (http/get "http://localhost:12233/200"
+                                                                        {:client client}))))))
+        (is (= {200 10} (frequencies (map deref (doall (repeatedly 10 #(future (:status (http/get "http://localhost:12233/200"
+                                                                                                  {:client client})))))))))
+        (finally ((:stop socks))))))
+  (testing "redirects are followed"
+    (let [socks (socks/start)
+          client (http/client {:follow-redirects :normal
+                               :proxy {:type :socks5 :host "127.0.0.1" :port (:port socks)}})]
+      (try
+        (is (= 200 (:status (http/get "http://localhost:12233/redirect/3" {:client client}))))
+        (finally ((:stop socks))))))
+  (testing "user and password authentication"
+    (let [socks (socks/start {:user "bob" :pass "secret"})]
+      (try
+        (let [client (http/client {:proxy {:type :socks5 :host "127.0.0.1" :port (:port socks)
+                                           :user "bob" :pass "secret"}})]
+          (is (= 200 (:status (http/get "http://localhost:12233/200" {:client client})))))
+        (testing "wrong credentials fail"
+          (let [client (http/client {:proxy {:type :socks5 :host "127.0.0.1" :port (:port socks)
+                                             :user "bob" :pass "wrong"}})]
+            (is (thrown? Exception (http/get "http://localhost:12233/200" {:client client})))))
+        (finally ((:stop socks))))))
+  (testing "the bridge is an HTTP proxy on loopback, shared per SOCKS5 config"
+    (let [selector (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port 61080})
+          selected (.select ^java.net.ProxySelector selector (java.net.URI. "http://example.org"))
+          address ^java.net.InetSocketAddress (.address ^java.net.Proxy (selected 0))
+          again (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port 61080})]
+      (is (= java.net.Proxy$Type/HTTP (.type ^java.net.Proxy (selected 0))))
+      (is (= "127.0.0.1" (.getHostString address)))
+      (is (= (.getPort address)
+             (.getPort ^java.net.InetSocketAddress
+                       (.address ^java.net.Proxy
+                                 ((.select ^java.net.ProxySelector again
+                                           (java.net.URI. "http://example.org")) 0)))))
+      (testing "a different SOCKS5 config gets its own bridge"
+        (let [other (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port 61081})]
+          (is (not= (.getPort address)
+                    (.getPort ^java.net.InetSocketAddress
+                              (.address ^java.net.Proxy
+                                        ((.select ^java.net.ProxySelector other
+                                                  (java.net.URI. "http://example.org")) 0))))))))))
+
+(deftest socks5-connect-test
+  (testing "CONNECT is tunneled through the SOCKS5 proxy"
+    (let [socks (socks/start)
+          selector (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port (:port socks)})
+          bridge ^java.net.InetSocketAddress
+          (.address ^java.net.Proxy ((.select ^java.net.ProxySelector selector
+                                              (java.net.URI. "http://example.org")) 0))]
+      (try
+        (with-open [s (java.net.Socket. "127.0.0.1" (.getPort bridge))]
+          (let [out (.getOutputStream s)
+                in (java.io.BufferedReader.
+                    (java.io.InputStreamReader. (.getInputStream s) "ISO-8859-1"))]
+            (.write out (.getBytes "CONNECT localhost:12233 HTTP/1.1\r\nHost: localhost:12233\r\n\r\n"
+                                   "ISO-8859-1"))
+            (.flush out)
+            (is (str/includes? (.readLine in) "200"))
+            (while (not= "" (.readLine in)))
+            (.write out (.getBytes "GET /200 HTTP/1.1\r\nHost: localhost:12233\r\nConnection: close\r\n\r\n"
+                                   "ISO-8859-1"))
+            (.flush out)
+            (is (str/includes? (.readLine in) "200"))
+            (is (= [["localhost" 12233]] @(:targets socks)))))
+        (finally ((:stop socks)))))))
 
 (deftest cookie-handler-test
   (testing "nil passthrough"
