@@ -161,12 +161,14 @@ Construct a custom client. To get the same behavior as the (implicit) default cl
   * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' or a map of options, see docstring of `->SSLParameters`.
   * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of [`->ProxySelector`](#babashka.http-client/->ProxySelector).
     A map of `{:type :socks5 :host <string> :port <long>}`, with optional `:user`
-    and `:pass`, routes through a SOCKS5 proxy. `java.net.http` connects through
-    HTTP proxies only, so this starts an HTTP proxy on 127.0.0.1 that tunnels
-    over the SOCKS5 proxy. It listens on an ephemeral port for the rest of the
-    process lifetime and is shared by every client with the same SOCKS5 options.
-    Other processes on the loopback interface can reach it, so it serves only
-    requests carrying a token that this client sends.
+    and `:pass`, routes through a SOCKS5 proxy. Its `:connect-timeout`, in
+    milliseconds, bounds the SOCKS5 handshake and defaults to the client's
+    `:connect-timeout`. `java.net.http` connects through HTTP proxies only, so
+    this starts an HTTP proxy on 127.0.0.1 that tunnels over the SOCKS5 proxy.
+    It listens on an ephemeral port for the rest of the process lifetime and is
+    shared by every client with the same SOCKS5 options. Other processes on the
+    loopback interface can reach it, so it serves only requests carrying a token
+    that this client sends.
   * `:authenticator` - a `java.net.Authenticator` or a map of options, see docstring of [`->Authenticator`](#babashka.http-client/->Authenticator).
   * `:cookie-handler` - a `java.net.CookieHandler` or a map of options, see docstring of [`->CookieHandler`](#babashka.http-client/->CookieHandler).
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
@@ -178,7 +180,7 @@ Construct a custom client. To get the same behavior as the (implicit) default cl
 
   The map can be passed to [`request`](#babashka.http-client/request) via the `:client` key.
   
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L85-L115">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L85-L117">Source</a></sub></p>
 
 ## <a name="babashka.http-client/default-client-opts">`default-client-opts`</a><a name="babashka.http-client/default-client-opts"></a>
 
@@ -196,7 +198,7 @@ Options used to create the (implicit) default client.
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:delete`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L151-L156">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L153-L158">Source</a></sub></p>
 
 ## <a name="babashka.http-client/get">`get`</a><a name="babashka.http-client/get"></a>
 ``` clojure
@@ -206,7 +208,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:get`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L144-L149">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L146-L151">Source</a></sub></p>
 
 ## <a name="babashka.http-client/head">`head`</a><a name="babashka.http-client/head"></a>
 ``` clojure
@@ -216,7 +218,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:head`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L158-L163">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L160-L165">Source</a></sub></p>
 
 ## <a name="babashka.http-client/patch">`patch`</a><a name="babashka.http-client/patch"></a>
 ``` clojure
@@ -226,7 +228,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:patch`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L172-L179">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L174-L181">Source</a></sub></p>
 
 ## <a name="babashka.http-client/post">`post`</a><a name="babashka.http-client/post"></a>
 ``` clojure
@@ -236,7 +238,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:post`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L165-L170">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L167-L172">Source</a></sub></p>
 
 ## <a name="babashka.http-client/put">`put`</a><a name="babashka.http-client/put"></a>
 ``` clojure
@@ -246,7 +248,7 @@ Convenience wrapper for [`request`](#babashka.http-client/request) with method `
 ```
 
 Convenience wrapper for [`request`](#babashka.http-client/request) with method `:put`
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L181-L188">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L183-L190">Source</a></sub></p>
 
 ## <a name="babashka.http-client/request">`request`</a><a name="babashka.http-client/request"></a>
 ``` clojure
@@ -277,7 +279,7 @@ Perform request. Returns map with at least `:body`, `:status`
   * `:timeout` - request timeout in milliseconds
   * `:throw` - throw on exceptional status codes, all other than `#{200 201 202 203 204 205 206 207 300 301 302 303 304 307}`
   * `:version` - the HTTP version: `:http1.1` or `:http2`.
-<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L117-L142">Source</a></sub></p>
+<p><sub><a href="https://github.com/babashka/http-client/blob/main/src/babashka/http_client.clj#L119-L144">Source</a></sub></p>
 
 -----
 # <a name="babashka.http-client.interceptors">babashka.http-client.interceptors</a>

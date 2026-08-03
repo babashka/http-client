@@ -638,6 +638,25 @@
       (try
         (is (thrown? Exception (http/get "http://localhost:12233/200" {:client client})))
         (finally (.close silent)))))
+  (testing "the client :connect-timeout bounds the handshake too"
+    (let [silent (java.net.ServerSocket. 0 50 (java.net.InetAddress/getByName "127.0.0.1"))
+          client (http/client {:connect-timeout 300
+                               :proxy {:type :socks5 :host "127.0.0.1"
+                                       :port (.getLocalPort silent)}})
+          started (System/currentTimeMillis)]
+      (try
+        (is (thrown? Exception (http/get "http://localhost:12233/200" {:client client})))
+        (is (< (- (System/currentTimeMillis) started) 5000))
+        (finally (.close silent)))))
+  (testing "an IPv6 literal is sent as an address, not as a name"
+    (let [socks (socks/start)]
+      (try
+        ;; Nothing listens on port 1, so this fails at the proxy. The target it
+        ;; decoded is what matters.
+        (is (thrown? Exception (http/get "http://[::1]:1/200"
+                                         {:client (socks-client (:port socks))})))
+        (is (= [["0:0:0:0:0:0:0:1" 1]] @(:targets socks)))
+        (finally ((:stop socks))))))
   (testing "the bridge is an HTTP proxy on loopback, shared per SOCKS5 config"
     (let [address (bridge-address (socks-client 61080))]
       (is (= "127.0.0.1" (.getHostString address)))
@@ -696,9 +715,39 @@
                (bridge-status bridge (str "CONNECT localhost:12233 HTTP/1.1\r\nHost: localhost:12233\r\n"
                                           "Proxy-Authorization: Bbsocks wrong\r\n\r\n"))
                "407")))
+        (testing "a flood of headers is cut off"
+          ;; Cut mid stream, so the peer sees either a clean close or a reset.
+          (is (nil? (try (bridge-status bridge
+                                        (str "CONNECT localhost:12233 HTTP/1.1\r\n"
+                                             (str/join (repeat 200 "X-Pad: x\r\n"))
+                                             "\r\n"))
+                         (catch java.net.SocketException _ nil)))))
         (testing "no connection to the SOCKS5 proxy was made"
           (is (= [] @(:targets socks))))
-        (finally ((:stop socks)))))))
+        (finally ((:stop socks))))))
+  (testing "closing the client tears the tunnel down"
+    (let [socks (socks/start)
+          bridge (bridge-address (socks-client (:port socks)))
+          held (java.net.ServerSocket. 0 50 (java.net.InetAddress/getByName "127.0.0.1"))
+          saw-eof (promise)]
+      (try
+        (doto (Thread. (fn []
+                         (let [s (.accept held)
+                               in (.getInputStream s)]
+                           (while (not (neg? (.read in))))
+                           (deliver saw-eof true))))
+          (.setDaemon true)
+          (.start))
+        (with-bridge-connection
+          bridge
+          (str "CONNECT 127.0.0.1:" (.getLocalPort held) " HTTP/1.1\r\n"
+               "Host: localhost\r\n"
+               "Proxy-Authorization: " (socks-auth/authorization) "\r\n\r\n")
+          (fn [_out ^java.io.BufferedReader in]
+            (is (str/includes? (.readLine in) "200"))))
+        (testing "the tunneled connection is released, not left blocked"
+          (is (deref saw-eof 5000 false)))
+        (finally (.close held) ((:stop socks)))))))
 
 (deftest cookie-handler-test
   (testing "nil passthrough"

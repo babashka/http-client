@@ -94,12 +94,14 @@
   * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' or a map of options, see docstring of `->SSLParameters`.
   * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`.
     A map of `{:type :socks5 :host <string> :port <long>}`, with optional `:user`
-    and `:pass`, routes through a SOCKS5 proxy. `java.net.http` connects through
-    HTTP proxies only, so this starts an HTTP proxy on 127.0.0.1 that tunnels
-    over the SOCKS5 proxy. It listens on an ephemeral port for the rest of the
-    process lifetime and is shared by every client with the same SOCKS5 options.
-    Other processes on the loopback interface can reach it, so it serves only
-    requests carrying a token that this client sends.
+    and `:pass`, routes through a SOCKS5 proxy. Its `:connect-timeout`, in
+    milliseconds, bounds the SOCKS5 handshake and defaults to the client's
+    `:connect-timeout`. `java.net.http` connects through HTTP proxies only, so
+    this starts an HTTP proxy on 127.0.0.1 that tunnels over the SOCKS5 proxy.
+    It listens on an ephemeral port for the rest of the process lifetime and is
+    shared by every client with the same SOCKS5 options. Other processes on the
+    loopback interface can reach it, so it serves only requests carrying a token
+    that this client sends.
   * `:authenticator` - a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
   * `:cookie-handler` - a `java.net.CookieHandler` or a map of options, see docstring of `->CookieHandler`.
   * `:version` - the HTTP version: `:http1.1` or `:http2`.

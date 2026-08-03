@@ -59,7 +59,12 @@
                1 (let [ip (read-n in 4)]
                    (str/join "." (map #(ub ip %) (range 4))))
                3 (String. (read-n in (ub (read-n in 1) 0)) StandardCharsets/UTF_8)
-               4 (throw (ex-info "ipv6 not supported by the test server" {})))
+               ;; Expanded form, so the test does not depend on how the
+               ;; canonical short form compresses zero groups.
+               4 (let [ip (read-n in 16)]
+                   (str/join ":" (map (fn [i] (Integer/toHexString
+                                               (+ (* 256 (ub ip (* 2 i))) (ub ip (inc (* 2 i))))))
+                                      (range 8)))))
         port-bytes (read-n in 2)]
     [host (+ (* 256 (ub port-bytes 0)) (ub port-bytes 1))]))
 
@@ -73,11 +78,17 @@
           (with-open [origin (Socket.)]
             (.connect origin (InetSocketAddress. ^String host ^long (long port)))
             (write-bytes out [5 0 0 1 0 0 0 0 0 0])
-            (let [t (Thread. ^Runnable (fn [] (quietly #(pump (.getInputStream client)
-                                                              (.getOutputStream origin)))))]
+            (let [close-both (fn []
+                               (quietly #(.close origin))
+                               (quietly #(.close client)))
+                  t (Thread. ^Runnable (fn []
+                                         (quietly #(pump (.getInputStream client)
+                                                         (.getOutputStream origin)))
+                                         (close-both)))]
               (.setDaemon t true)
               (.start t)
               (quietly #(pump (.getInputStream origin) (.getOutputStream client)))
+              (close-both)
               (.join t 1000))))))))
 
 (defn start

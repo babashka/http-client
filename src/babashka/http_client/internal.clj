@@ -98,8 +98,13 @@
                trust-managers
                (SecureRandom.))))))
 
+(defn- ->millis [t]
+  (if (integer? t)
+    t
+    (some-> ^Duration t .toMillis)))
+
 (defn- ->Proxy
-  [opts socks?]
+  [opts client-opts]
   (if (instance? java.net.Proxy opts)
     opts
     (let [{:keys [host port type] :or {type :http}} opts]
@@ -114,12 +119,19 @@
         ;; requests carrying a token, which `client` adds, so it cannot be
         ;; reached through a selector built outside of `client`.
         (:socks :socks5)
-        (do (when-not socks?
+        (do (when-not client-opts
               (throw (ex-info (str "A " (pr-str type) " proxy is only supported as the "
                                    ":proxy option of a client.")
                               {:opts opts})))
             (if (and host port)
-              (let [bridge (socks/bridge-address opts)]
+              ;; The client's :connect-timeout covers reaching the bridge. The
+              ;; handshake behind it is bound by the same deadline by default.
+              (let [opts (cond-> opts
+                           (not (contains? opts :connect-timeout))
+                           (assoc :connect-timeout
+                                  (or (->millis (:connect-timeout client-opts))
+                                      socks/default-connect-timeout)))
+                    bridge (socks/bridge-address opts)]
                 (java.net.Proxy. java.net.Proxy$Type/HTTP
                                  (java.net.InetSocketAddress. ^String (:host bridge)
                                                               ^long (:port bridge))))
@@ -134,8 +146,8 @@
   (boolean (and (map? opts) (#{:socks :socks5} (:type opts)))))
 
 (defn ->ProxySelector
-  ([opts-or-fn] (->ProxySelector opts-or-fn false))
-  ([opts-or-fn socks?]
+  ([opts-or-fn] (->ProxySelector opts-or-fn nil))
+  ([opts-or-fn client-opts]
    (cond
      (instance? java.net.ProxySelector opts-or-fn)
      opts-or-fn
@@ -147,11 +159,11 @@
          ;; Only allow the proxy function to return a single proxy.
          ;; Returning multiple is currently not supported.
          [(if-let [proxy-values (opts-or-fn uri)]
-            (->Proxy proxy-values false)
+            (->Proxy proxy-values nil)
             java.net.Proxy/NO_PROXY)]))
      :else
      ;; Return a static proxy configuration that always returns the same proxy.
-     (let [static-proxy (->Proxy opts-or-fn socks?)]
+     (let [static-proxy (->Proxy opts-or-fn client-opts)]
        (proxy [java.net.ProxySelector] []
          (connectFailed [_ _ _])
          (select [^URI _uri]
@@ -224,7 +236,7 @@
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)
        authenticator (.authenticator (->Authenticator authenticator))
-       proxy (.proxy (->ProxySelector proxy true))
+       proxy (.proxy (->ProxySelector proxy opts))
        ssl-context (.sslContext (->SSLContext ssl-context))
        ssl-parameters (.sslParameters (->SSLParameters ssl-parameters))
        version (.version (version-keyword->version-enum version))))))

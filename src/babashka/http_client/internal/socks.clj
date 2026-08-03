@@ -84,25 +84,64 @@
 
 (def ^:private ipv4-address #"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
 
-(defn- ipv4-bytes
-  "The four octets of a dotted quad, or nil when it is not one. Parsed here
-  rather than through InetAddress, whose getAddress is not available to
-  babashka when this namespace is interpreted."
+;; Literals are parsed here rather than through InetAddress, whose getAddress is
+;; not available to babashka when this namespace is interpreted.
+
+(defn- ipv4-octets
+  "The four octets of a dotted quad, or nil when it is not one."
   [^String host]
   (when (re-matches ipv4-address host)
     (let [octets (map (fn [^String s] (Integer/parseInt s)) (str/split host #"\."))]
       (when (every? (fn [o] (<= 0 o 255)) octets)
-        (->byte-array octets)))))
+        octets))))
+
+(defn- group-octets
+  "Octets of colon separated IPv6 groups, where the last may be a dotted quad.
+  Returns nil on anything malformed."
+  [groups]
+  (reduce (fn [acc ^String g]
+            (cond
+              (nil? acc) (reduced nil)
+              (str/includes? g ".") (if-let [v4 (ipv4-octets g)]
+                                      (into acc v4)
+                                      (reduced nil))
+              :else (let [v (when (re-matches #"[0-9a-fA-F]{1,4}" g)
+                              (Integer/parseInt g 16))]
+                      (if v
+                        (conj acc (bit-shift-right v 8) (bit-and v 0xFF))
+                        (reduced nil)))))
+          []
+          groups))
+
+(defn- split-groups [^String s]
+  (if (str/blank? s) [] (str/split s #":")))
+
+(defn- ipv6-octets
+  "The sixteen octets of an IPv6 literal, or nil when it is not one."
+  [^String host]
+  (when (str/includes? host ":")
+    (let [without-zone (first (str/split host #"%" 2))
+          halves (str/split without-zone #"::" -1)]
+      (case (count halves)
+        1 (let [octets (group-octets (split-groups without-zone))]
+            (when (= 16 (count octets)) octets))
+        2 (let [head (group-octets (split-groups (first halves)))
+                tail (group-octets (split-groups (second halves)))]
+            ;; `::` stands for at least one zero group.
+            (when (and head tail (<= (+ (count head) (count tail)) 14))
+              (concat head (repeat (- 16 (count head) (count tail)) 0) tail)))
+        nil))))
 
 (defn- address-bytes
   "SOCKS5 address type and encoded address for a target host. A name is sent as
-  is, so the proxy resolves it rather than this process. An IPv6 literal has no
-  address type here and goes as a name, which the proxy rejects."
+  is, so the proxy resolves it rather than this process."
   [^String host]
-  (if-let [v4 (ipv4-bytes host)]
-    [1 v4]
-    (let [b (.getBytes host StandardCharsets/UTF_8)]
-      [3 (->byte-array (cons (alength b) (seq b)))])))
+  (if-let [v4 (ipv4-octets host)]
+    [1 (->byte-array v4)]
+    (if-let [v6 (ipv6-octets host)]
+      [4 (->byte-array v6)]
+      (let [b (.getBytes host StandardCharsets/UTF_8)]
+        [3 (->byte-array (cons (alength b) (seq b)))]))))
 
 (defn- request-connect [^InputStream in ^OutputStream out ^String host ^long port]
   (let [[atyp ^bytes addr] (address-bytes host)]
@@ -118,7 +157,7 @@
                       {:host host :port port :reply status})))
     (skip-bound-address in (ub reply 3))))
 
-(def ^:private default-connect-timeout 10000)
+(def default-connect-timeout 10000)
 
 (defn- socks-connect
   "Connects to target-host:target-port through the SOCKS5 proxy described by opts."
@@ -157,12 +196,15 @@
           (throw (ex-info "Header line is too long." {}))
           :else (do (.append sb (char b)) (recur)))))))
 
+(def ^:private max-headers 64)
+
 (defn- read-headers [^InputStream in]
   (loop [acc []]
     (let [line (read-header-line in)]
-      (if (or (nil? line) (= "" line))
-        acc
-        (recur (conj acc line))))))
+      (cond
+        (or (nil? line) (= "" line)) acc
+        (>= (count acc) max-headers) (throw (ex-info "Too many header lines." {}))
+        :else (recur (conj acc line))))))
 
 (defn- header-value ^String [^String line]
   (str/trim (subs line (inc (.indexOf line ":")))))
@@ -203,14 +245,21 @@
           (.flush out)
           (recur))))))
 
-(defn- relay [^Socket client ^Socket origin downstream]
-  (let [upstream (Thread. ^Runnable (fn []
+(defn- relay
+  "Copies bytes both ways until either direction ends. Whichever ends first
+  closes both sockets, so the other never blocks on a peer that is gone."
+  [^Socket client ^Socket origin downstream]
+  (let [close-both (fn []
+                     (quietly #(.close origin))
+                     (quietly #(.close client)))
+        upstream (Thread. ^Runnable (fn []
                                       (quietly #(pump (.getInputStream client)
-                                                      (.getOutputStream origin)))))]
+                                                      (.getOutputStream origin)))
+                                      (close-both)))]
     (.setDaemon upstream true)
     (.start upstream)
     (quietly downstream)
-    (quietly #(.shutdownInput client))
+    (close-both)
     (.join upstream 1000)))
 
 (def ^:private dropped-headers
@@ -286,15 +335,21 @@
 
 (defn- handle [socks-opts ^Socket client]
   (with-open [^Socket client client]
+    ;; An unauthenticated caller must not be able to hold a thread open by
+    ;; trickling headers, so the head is read under a deadline.
+    (.setSoTimeout client (int (:connect-timeout socks-opts default-connect-timeout)))
     (when-let [request-line (read-header-line (.getInputStream client))]
       (let [lines (read-headers (.getInputStream client))
             [method target version] (str/split request-line #" " 3)]
         (if-not (authorized? lines)
           (write-ascii (.getOutputStream client) unauthorized)
-          (if (= "CONNECT" (str/upper-case (str method)))
-            (handle-connect socks-opts client target)
-            (handle-absolute socks-opts client method target (or version "HTTP/1.1")
-                             lines)))))))
+          (do
+            ;; A relay may idle for a long time. The deadline covered the head.
+            (.setSoTimeout client 0)
+            (if (= "CONNECT" (str/upper-case (str method)))
+              (handle-connect socks-opts client target)
+              (handle-absolute socks-opts client method target (or version "HTTP/1.1")
+                               lines))))))))
 
 (defn- start-bridge
   "Starts a loopback HTTP proxy that tunnels through the given SOCKS5 proxy.
