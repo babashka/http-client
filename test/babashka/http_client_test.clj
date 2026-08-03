@@ -3,6 +3,7 @@
    [babashka.fs :as fs]
    [babashka.http-client :as http]
    [babashka.http-client.interceptors :as i]
+   [babashka.http-client.internal.socks :as socks-auth]
    [babashka.http-client.internal.version :as iv]
    [babashka.http-client.test-socks-server :as socks]
    [borkdude.deflet :refer [deflet]]
@@ -550,10 +551,26 @@
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #":host and :port"
                           (http/->ProxySelector {:host "127.0.0.1"})))
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #":host and :port"
-                          (http/->ProxySelector {:host "127.0.0.1" :type :socks5})))))
+                          (http/client {:proxy {:host "127.0.0.1" :type :socks5}}))))
+  (testing "a socks5 bridge is only reachable through a client"
+    (is (thrown-with-msg? clojure.lang.ExceptionInfo #"only supported as the :proxy option"
+                          (http/->ProxySelector {:host "127.0.0.1" :port 1080 :type :socks5})))
+    (testing "including from a selector function"
+      (let [^java.net.ProxySelector selector
+            (http/->ProxySelector (fn [_] {:host "127.0.0.1" :port 1080 :type :socks5}))]
+        (is (thrown-with-msg? clojure.lang.ExceptionInfo #"only supported as the :proxy option"
+                              (.select selector (java.net.URI. "http://www.example.org"))))))))
 
 (defn- socks-client [socks-port]
   (http/client {:proxy {:type :socks5 :host "127.0.0.1" :port socks-port}}))
+
+(defn- bridge-address
+  "Loopback address of the bridge a socks5 client routes through."
+  ^java.net.InetSocketAddress [client]
+  (let [^java.net.ProxySelector selector (.orElse (.proxy ^java.net.http.HttpClient
+                                                          (:client client))
+                                                  nil)]
+    (.address ^java.net.Proxy ((.select selector (java.net.URI. "http://example.org")) 0))))
 
 (deftest socks5-test
   (testing "a request reaches the target through the SOCKS5 proxy"
@@ -607,40 +624,38 @@
             (is (thrown? Exception (http/get "http://localhost:12233/200" {:client client})))))
         (finally ((:stop socks))))))
   (testing "the bridge is an HTTP proxy on loopback, shared per SOCKS5 config"
-    (let [selector (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port 61080})
-          selected (.select ^java.net.ProxySelector selector (java.net.URI. "http://example.org"))
-          address ^java.net.InetSocketAddress (.address ^java.net.Proxy (selected 0))
-          again (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port 61080})]
-      (is (= java.net.Proxy$Type/HTTP (.type ^java.net.Proxy (selected 0))))
+    (let [address (bridge-address (socks-client 61080))]
       (is (= "127.0.0.1" (.getHostString address)))
-      (is (= (.getPort address)
-             (.getPort ^java.net.InetSocketAddress
-                       (.address ^java.net.Proxy
-                                 ((.select ^java.net.ProxySelector again
-                                           (java.net.URI. "http://example.org")) 0)))))
+      (is (= (.getPort address) (.getPort (bridge-address (socks-client 61080)))))
       (testing "a different SOCKS5 config gets its own bridge"
-        (let [other (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port 61081})]
-          (is (not= (.getPort address)
-                    (.getPort ^java.net.InetSocketAddress
-                              (.address ^java.net.Proxy
-                                        ((.select ^java.net.ProxySelector other
-                                                  (java.net.URI. "http://example.org")) 0))))))))))
+        (is (not= (.getPort address) (.getPort (bridge-address (socks-client 61081)))))))))
+
+(defn- with-bridge-connection
+  "Speaks HTTP to the bridge directly, then calls f with its streams."
+  [^java.net.InetSocketAddress bridge request f]
+  (with-open [s (java.net.Socket. "127.0.0.1" (.getPort bridge))]
+    (let [out (.getOutputStream s)
+          in (java.io.BufferedReader.
+              (java.io.InputStreamReader. (.getInputStream s) "ISO-8859-1"))]
+      (.write out (.getBytes ^String request "ISO-8859-1"))
+      (.flush out)
+      (f out in))))
+
+(defn- bridge-status [bridge request]
+  (with-bridge-connection bridge request
+    (fn [_out ^java.io.BufferedReader in] (.readLine in))))
 
 (deftest socks5-connect-test
   (testing "CONNECT is tunneled through the SOCKS5 proxy"
     (let [socks (socks/start)
-          selector (http/->ProxySelector {:type :socks5 :host "127.0.0.1" :port (:port socks)})
-          bridge ^java.net.InetSocketAddress
-          (.address ^java.net.Proxy ((.select ^java.net.ProxySelector selector
-                                              (java.net.URI. "http://example.org")) 0))]
+          bridge (bridge-address (socks-client (:port socks)))]
       (try
-        (with-open [s (java.net.Socket. "127.0.0.1" (.getPort bridge))]
-          (let [out (.getOutputStream s)
-                in (java.io.BufferedReader.
-                    (java.io.InputStreamReader. (.getInputStream s) "ISO-8859-1"))]
-            (.write out (.getBytes "CONNECT localhost:12233 HTTP/1.1\r\nHost: localhost:12233\r\n\r\n"
-                                   "ISO-8859-1"))
-            (.flush out)
+        (with-bridge-connection
+          bridge
+          (str "CONNECT localhost:12233 HTTP/1.1\r\n"
+               "Host: localhost:12233\r\n"
+               "Proxy-Authorization: " (socks-auth/authorization) "\r\n\r\n")
+          (fn [^java.io.OutputStream out ^java.io.BufferedReader in]
             (is (str/includes? (.readLine in) "200"))
             (while (not= "" (.readLine in)))
             (.write out (.getBytes "GET /200 HTTP/1.1\r\nHost: localhost:12233\r\nConnection: close\r\n\r\n"
@@ -648,6 +663,26 @@
             (.flush out)
             (is (str/includes? (.readLine in) "200"))
             (is (= [["localhost" 12233]] @(:targets socks)))))
+        (finally ((:stop socks))))))
+  (testing "the bridge refuses local callers without the token"
+    (let [socks (socks/start)
+          bridge (bridge-address (socks-client (:port socks)))]
+      (try
+        (testing "CONNECT"
+          (is (str/includes?
+               (bridge-status bridge "CONNECT localhost:12233 HTTP/1.1\r\nHost: localhost:12233\r\n\r\n")
+               "407")))
+        (testing "a plain request"
+          (is (str/includes?
+               (bridge-status bridge "GET http://localhost:12233/200 HTTP/1.1\r\nHost: localhost:12233\r\n\r\n")
+               "407")))
+        (testing "a wrong token"
+          (is (str/includes?
+               (bridge-status bridge (str "CONNECT localhost:12233 HTTP/1.1\r\nHost: localhost:12233\r\n"
+                                          "Proxy-Authorization: Bbsocks wrong\r\n\r\n"))
+               "407")))
+        (testing "no connection to the SOCKS5 proxy was made"
+          (is (= [] @(:targets socks))))
         (finally ((:stop socks)))))))
 
 (deftest cookie-handler-test

@@ -99,7 +99,7 @@
                (SecureRandom.))))))
 
 (defn- ->Proxy
-  [opts]
+  [opts socks?]
   (if (instance? java.net.Proxy opts)
     opts
     (let [{:keys [host port type] :or {type :http}} opts]
@@ -110,40 +110,52 @@
                                  (java.net.InetSocketAddress. ^String host ^long port))
                 (throw (ex-info "Proxy needs both :host and :port." {:opts opts})))
         ;; java.net.http speaks to HTTP proxies only, so SOCKS5 goes through a
-        ;; loopback HTTP proxy that tunnels over it.
+        ;; loopback HTTP proxy that tunnels over it. That bridge only serves
+        ;; requests carrying a token, which `client` adds, so it cannot be
+        ;; reached through a selector built outside of `client`.
         (:socks :socks5)
-        (if (and host port)
-          (let [bridge (socks/bridge-address opts)]
-            (java.net.Proxy. java.net.Proxy$Type/HTTP
-                             (java.net.InetSocketAddress. ^String (:host bridge)
-                                                          ^long (:port bridge))))
-          (throw (ex-info "Proxy needs both :host and :port." {:opts opts})))
+        (do (when-not socks?
+              (throw (ex-info (str "A " (pr-str type) " proxy is only supported as the "
+                                   ":proxy option of a client.")
+                              {:opts opts})))
+            (if (and host port)
+              (let [bridge (socks/bridge-address opts)]
+                (java.net.Proxy. java.net.Proxy$Type/HTTP
+                                 (java.net.InetSocketAddress. ^String (:host bridge)
+                                                              ^long (:port bridge))))
+              (throw (ex-info "Proxy needs both :host and :port." {:opts opts}))))
         (throw (ex-info (str "Unsupported proxy type: " (pr-str type)
                              ". Supported types are :http, :socks5 and :direct.")
                         {:opts opts}))))))
 
+(defn socks-proxy?
+  "True when the `:proxy` option asks for a SOCKS5 bridge."
+  [opts]
+  (boolean (and (map? opts) (#{:socks :socks5} (:type opts)))))
+
 (defn ->ProxySelector
-  [opts-or-fn]
-  (cond
-    (instance? java.net.ProxySelector opts-or-fn)
-    opts-or-fn
-    (fn? opts-or-fn)
-    ;; Create a dynamic proxy selector.
-    (proxy [java.net.ProxySelector] []
-      (connectFailed [_ _ _])
-      (select [^URI uri]
-        ;; Only allow the proxy function to return a single proxy.
-        ;; Returning multiple is currently not supported.
-        [(if-let [proxy-values (opts-or-fn uri)]
-           (->Proxy proxy-values)
-           java.net.Proxy/NO_PROXY)]))
-    :else
-    ;; Return a static proxy configuration that always returns the same proxy.
-    (let [static-proxy (->Proxy opts-or-fn)]
-      (proxy [java.net.ProxySelector] []
-        (connectFailed [_ _ _])
-        (select [^URI _uri]
-          [static-proxy])))))
+  ([opts-or-fn] (->ProxySelector opts-or-fn false))
+  ([opts-or-fn socks?]
+   (cond
+     (instance? java.net.ProxySelector opts-or-fn)
+     opts-or-fn
+     (fn? opts-or-fn)
+     ;; Create a dynamic proxy selector.
+     (proxy [java.net.ProxySelector] []
+       (connectFailed [_ _ _])
+       (select [^URI uri]
+         ;; Only allow the proxy function to return a single proxy.
+         ;; Returning multiple is currently not supported.
+         [(if-let [proxy-values (opts-or-fn uri)]
+            (->Proxy proxy-values false)
+            java.net.Proxy/NO_PROXY)]))
+     :else
+     ;; Return a static proxy configuration that always returns the same proxy.
+     (let [static-proxy (->Proxy opts-or-fn socks?)]
+       (proxy [java.net.ProxySelector] []
+         (connectFailed [_ _ _])
+         (select [^URI _uri]
+           [static-proxy]))))))
 
 (defn ->Authenticator
   [v]
@@ -212,7 +224,7 @@
        follow-redirects (.followRedirects (->follow-redirect follow-redirects))
        priority (.priority priority)
        authenticator (.authenticator (->Authenticator authenticator))
-       proxy (.proxy (->ProxySelector proxy))
+       proxy (.proxy (->ProxySelector proxy true))
        ssl-context (.sslContext (->SSLContext ssl-context))
        ssl-parameters (.sslParameters (->SSLParameters ssl-parameters))
        version (.version (version-keyword->version-enum version))))))
@@ -220,7 +232,9 @@
 (defn client
   ([opts]
    {:client (.build (client-builder opts))
-    :request (:request opts)
+    :request (cond-> (:request opts)
+               (socks-proxy? (:proxy opts))
+               (update :headers assoc :proxy-authorization (socks/authorization)))
     :type :babashka.http-client/client}))
 
 (def default-client-opts

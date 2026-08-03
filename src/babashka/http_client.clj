@@ -14,15 +14,11 @@
   Options:
   * `:host` - string
   * `:port` - long
-  * `:type` - `:http` (default), `:socks5`, or `:direct`, which ignores `:host`
-    and `:port`.
-  * `:user` and `:pass` - credentials for a `:socks5` proxy that asks for them.
+  * `:type` - `:http` (default) or `:direct`, which ignores `:host` and `:port`.
+    `java.net.http` connects through HTTP proxies only.
 
-  `java.net.http` connects through HTTP proxies only. `:socks5` therefore
-  starts an HTTP proxy on 127.0.0.1 that tunnels over the SOCKS5 proxy. It
-  listens on an ephemeral port for the rest of the process lifetime and is
-  shared by every client with the same SOCKS5 options. Any process on the
-  loopback interface can use it."
+  For `:socks5`, pass the map to the `:proxy` option of `client` instead. A
+  SOCKS5 proxy needs a bridge that only `client` can authenticate to."
   [opts-or-fn]
   (if (instance? java.net.ProxySelector opts-or-fn)
     opts-or-fn
@@ -97,6 +93,13 @@
   * `:ssl-context` - a `javax.net.ssl.SSLContext` or a map of options, see docstring of `->SSLContext`.
   * `:ssl-parameters` - a `javax.net.ssl.SSLParameters' or a map of options, see docstring of `->SSLParameters`.
   * `:proxy` - a `java.net.ProxySelector` or a map of options, see docstring of `->ProxySelector`.
+    A map of `{:type :socks5 :host <string> :port <long>}`, with optional `:user`
+    and `:pass`, routes through a SOCKS5 proxy. `java.net.http` connects through
+    HTTP proxies only, so this starts an HTTP proxy on 127.0.0.1 that tunnels
+    over the SOCKS5 proxy. It listens on an ephemeral port for the rest of the
+    process lifetime and is shared by every client with the same SOCKS5 options.
+    Other processes on the loopback interface can reach it, so it serves only
+    requests carrying a token that this client sends.
   * `:authenticator` - a `java.net.Authenticator` or a map of options, see docstring of `->Authenticator`.
   * `:cookie-handler` - a `java.net.CookieHandler` or a map of options, see docstring of `->CookieHandler`.
   * `:version` - the HTTP version: `:http1.1` or `:http2`.

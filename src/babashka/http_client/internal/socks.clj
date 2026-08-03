@@ -5,9 +5,26 @@
   (:import
    [java.io InputStream OutputStream]
    [java.net InetAddress InetSocketAddress ServerSocket Socket URI]
-   [java.nio.charset StandardCharsets]))
+   [java.nio.charset StandardCharsets]
+   [java.security MessageDigest SecureRandom]
+   [java.util Base64]))
 
 (set! *warn-on-reflection* true)
+
+;; The bridge listens on loopback, where any local process can reach it. Only
+;; requests carrying this token are served. `Basic` would be stripped from the
+;; CONNECT by jdk.http.auth.tunneling.disabledSchemes, so the scheme is our own.
+(def ^:private auth-scheme "Bbsocks")
+
+(defonce ^:private token
+  (delay (let [b (byte-array 32)]
+           (.nextBytes (SecureRandom.) b)
+           (.encodeToString (Base64/getUrlEncoder) b))))
+
+(defn authorization
+  "Value of the `Proxy-Authorization` header the bridge demands."
+  []
+  (str auth-scheme " " @token))
 
 (def ^:private reply-messages
   {1 "general SOCKS server failure"
@@ -110,11 +127,24 @@
           (throw (ex-info "Header line is too long." {}))
           :else (do (.append sb (char b)) (recur)))))))
 
-(defn- drain-headers [^InputStream in]
-  (loop []
-    (when-let [line (read-header-line in)]
-      (when-not (= "" line)
-        (recur)))))
+(defn- read-headers [^InputStream in]
+  (loop [acc []]
+    (let [line (read-header-line in)]
+      (if (or (nil? line) (= "" line))
+        acc
+        (recur (conj acc line))))))
+
+(defn- header-value ^String [^String line]
+  (str/trim (subs line (inc (.indexOf line ":")))))
+
+(defn- authorized? [lines]
+  (let [expected (.getBytes ^String (authorization) StandardCharsets/ISO_8859_1)]
+    (boolean (some (fn [^String line]
+                     (and (str/starts-with? (str/lower-case line) "proxy-authorization:")
+                          (MessageDigest/isEqual
+                           (.getBytes (header-value line) StandardCharsets/ISO_8859_1)
+                           expected)))
+                   lines))))
 
 (defn- strip-brackets ^String [^String host]
   (if (and (str/starts-with? host "[") (str/ends-with? host "]"))
@@ -154,32 +184,30 @@
     (.join upstream 1000)))
 
 (def ^:private dropped-headers
-  ["proxy-connection:" "connection:" "keep-alive:" "upgrade:" "http2-settings:"])
+  ["proxy-connection:" "proxy-authorization:" "connection:" "keep-alive:"
+   "upgrade:" "http2-settings:"])
 
 (defn- append-headers
   "Copies headers into sb, dropping the hop by hop ones, and closes the block
   with `Connection: close`."
-  [^StringBuilder sb ^InputStream in]
-  (loop []
-    (when-let [line (read-header-line in)]
-      (when-not (= "" line)
-        (let [lower (str/lower-case line)]
-          (when-not (some (fn [h] (str/starts-with? lower ^String h)) dropped-headers)
-            (.append sb line)
-            (.append sb "\r\n")))
-        (recur))))
+  [^StringBuilder sb lines]
+  (doseq [^String line lines]
+    (let [lower (str/lower-case line)]
+      (when-not (some (fn [h] (str/starts-with? lower ^String h)) dropped-headers)
+        (.append sb line)
+        (.append sb "\r\n"))))
   ;; One request per connection avoids parsing bodies to find the next one.
   (.append sb "Connection: close\r\n\r\n"))
 
 (defn- forward-request-head
   "Rewrites an absolute form request line to origin form and forwards the headers."
-  [^InputStream in ^OutputStream out ^String method ^URI uri ^String version]
+  [^OutputStream out ^String method ^URI uri ^String version lines]
   (let [path (.getRawPath uri)
         query (.getRawQuery uri)
         sb (StringBuilder.)]
     (.append sb (str method " " (if (str/blank? path) "/" path)
                      (when query (str "?" query)) " " version "\r\n"))
-    (append-headers sb in)
+    (append-headers sb lines)
     (write-ascii out (str sb))))
 
 (defn- forward-response-head
@@ -190,7 +218,7 @@
     (let [sb (StringBuilder.)]
       (.append sb status-line)
       (.append sb "\r\n")
-      (append-headers sb in)
+      (append-headers sb (read-headers in))
       (write-ascii out (str sb))
       true)
     false))
@@ -204,30 +232,39 @@
 
 (defn- handle-connect [socks-opts ^Socket client ^String target]
   (let [[host port] (split-host-port target 443)]
-    (drain-headers (.getInputStream client))
     (with-open [^Socket origin (connect-or-fail socks-opts client host port)]
       (write-ascii (.getOutputStream client) "HTTP/1.1 200 Connection Established\r\n\r\n")
       (relay client origin
              #(pump (.getInputStream origin) (.getOutputStream client))))))
 
-(defn- handle-absolute [socks-opts ^Socket client ^String method ^String target ^String version]
+(defn- handle-absolute [socks-opts ^Socket client ^String method ^String target
+                        ^String version lines]
   (let [uri (URI. target)
         host (strip-brackets (.getHost uri))
         port (if (pos? (.getPort uri)) (.getPort uri) 80)]
     (with-open [^Socket origin (connect-or-fail socks-opts client host port)]
-      (forward-request-head (.getInputStream client) (.getOutputStream origin)
-                            method uri version)
+      (forward-request-head (.getOutputStream origin) method uri version lines)
       (relay client origin
              #(when (forward-response-head (.getInputStream origin) (.getOutputStream client))
                 (pump (.getInputStream origin) (.getOutputStream client)))))))
 
+(def ^:private unauthorized
+  (str "HTTP/1.1 407 Proxy Authentication Required\r\n"
+       "Proxy-Authenticate: " auth-scheme "\r\n"
+       "Content-Length: 0\r\n"
+       "Connection: close\r\n\r\n"))
+
 (defn- handle [socks-opts ^Socket client]
   (with-open [^Socket client client]
     (when-let [request-line (read-header-line (.getInputStream client))]
-      (let [[method target version] (str/split request-line #" " 3)]
-        (if (= "CONNECT" (str/upper-case (str method)))
-          (handle-connect socks-opts client target)
-          (handle-absolute socks-opts client method target (or version "HTTP/1.1")))))))
+      (let [lines (read-headers (.getInputStream client))
+            [method target version] (str/split request-line #" " 3)]
+        (if-not (authorized? lines)
+          (write-ascii (.getOutputStream client) unauthorized)
+          (if (= "CONNECT" (str/upper-case (str method)))
+            (handle-connect socks-opts client target)
+            (handle-absolute socks-opts client method target (or version "HTTP/1.1")
+                             lines)))))))
 
 (defn- start-bridge
   "Starts a loopback HTTP proxy that tunnels through the given SOCKS5 proxy.

@@ -56,9 +56,9 @@
                             {:port port
                              :legacy-return-value? false})
         socks (socks/start)
-        client (:client (http/client {:proxy {:type :socks5
-                                              :host "127.0.0.1"
-                                              :port (:port socks)}}))
+        client (http/client {:proxy {:type :socks5
+                                     :host "127.0.0.1"
+                                     :port (:port socks)}})
         echoed (atom [])
         ws (ws/websocket {:uri (str "ws://localhost:" port)
                           :client client

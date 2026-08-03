@@ -24,10 +24,18 @@
   * `:on-pong` - `[ws data]` A Pong message has been received.
   * `:on-close` - `[ws status reason]` Receives a Close message indicating the WebSocket's input has been closed.
   * `:on-error` - `[ws err]` An error has occurred."
-  [{:keys [client]
+  [{:keys [client headers]
     :as opts}]
-  (let [client (or client (:client @i/default-client))]
-    (w/websocket (assoc opts :client client))))
+  (let [client (or client @i/default-client)
+        ;; A client map carries the credentials for its SOCKS5 bridge, which the
+        ;; handshake has to present just like a regular request does.
+        wrapped? (= :babashka.http-client/client (:type client))
+        headers (cond-> headers
+                  wrapped? (merge (select-keys (:headers (:request client))
+                                               [:proxy-authorization])))]
+    (w/websocket (assoc opts
+                        :client (if wrapped? (:client client) client)
+                        :headers headers))))
 
 (defn send!
   "Sends a message to the WebSocket.
