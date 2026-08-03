@@ -623,6 +623,21 @@
                                              :user "bob" :pass "wrong"}})]
             (is (thrown? Exception (http/get "http://localhost:12233/200" {:client client})))))
         (finally ((:stop socks))))))
+  (testing "an IP literal target is sent as an address, not as a name"
+    (let [socks (socks/start)]
+      (try
+        (is (= 200 (:status (http/get "http://127.0.0.1:12233/200"
+                                      {:client (socks-client (:port socks))}))))
+        (is (= [["127.0.0.1" 12233]] @(:targets socks)))
+        (finally ((:stop socks))))))
+  (testing "a SOCKS5 proxy that never answers times out"
+    (let [silent (java.net.ServerSocket. 0 50 (java.net.InetAddress/getByName "127.0.0.1"))
+          client (http/client {:proxy {:type :socks5 :host "127.0.0.1"
+                                       :port (.getLocalPort silent)
+                                       :connect-timeout 300}})]
+      (try
+        (is (thrown? Exception (http/get "http://localhost:12233/200" {:client client})))
+        (finally (.close silent)))))
   (testing "the bridge is an HTTP proxy on loopback, shared per SOCKS5 config"
     (let [address (bridge-address (socks-client 61080))]
       (is (= "127.0.0.1" (.getHostString address)))

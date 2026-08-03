@@ -82,10 +82,32 @@
     (throw (ex-info "SOCKS proxy returned an unknown address type." {})))
   (read-n in 2))
 
+(def ^:private ipv4-address #"\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}")
+
+(defn- ipv4-bytes
+  "The four octets of a dotted quad, or nil when it is not one. Parsed here
+  rather than through InetAddress, whose getAddress is not available to
+  babashka when this namespace is interpreted."
+  [^String host]
+  (when (re-matches ipv4-address host)
+    (let [octets (map (fn [^String s] (Integer/parseInt s)) (str/split host #"\."))]
+      (when (every? (fn [o] (<= 0 o 255)) octets)
+        (->byte-array octets)))))
+
+(defn- address-bytes
+  "SOCKS5 address type and encoded address for a target host. A name is sent as
+  is, so the proxy resolves it rather than this process. An IPv6 literal has no
+  address type here and goes as a name, which the proxy rejects."
+  [^String host]
+  (if-let [v4 (ipv4-bytes host)]
+    [1 v4]
+    (let [b (.getBytes host StandardCharsets/UTF_8)]
+      [3 (->byte-array (cons (alength b) (seq b)))])))
+
 (defn- request-connect [^InputStream in ^OutputStream out ^String host ^long port]
-  (let [h (.getBytes host StandardCharsets/UTF_8)]
-    (.write out (->byte-array [5 1 0 3 (alength h)]))
-    (.write out h)
+  (let [[atyp ^bytes addr] (address-bytes host)]
+    (.write out (->byte-array [5 1 0 atyp]))
+    (.write out addr)
     (.write out (->byte-array [(bit-shift-right port 8) (bit-and port 0xFF)]))
     (.flush out))
   (let [reply (read-n in 4)
@@ -96,16 +118,24 @@
                       {:host host :port port :reply status})))
     (skip-bound-address in (ub reply 3))))
 
+(def ^:private default-connect-timeout 10000)
+
 (defn- socks-connect
   "Connects to target-host:target-port through the SOCKS5 proxy described by opts."
-  ^Socket [{:keys [host port user pass]} ^String target-host ^long target-port]
+  ^Socket [{:keys [host port user pass connect-timeout]
+            :or {connect-timeout default-connect-timeout}}
+           ^String target-host ^long target-port]
   (let [socket (Socket.)]
     (try
-      (.connect socket (InetSocketAddress. ^String host ^long port))
+      (.connect socket (InetSocketAddress. ^String host ^long port) (int connect-timeout))
+      (.setSoTimeout socket (int connect-timeout))
       (let [in (.getInputStream socket)
             out (.getOutputStream socket)]
         (greet in out user pass)
         (request-connect in out target-host target-port))
+      ;; A relay may idle for a long time, so the handshake timeout must not
+      ;; outlive the handshake.
+      (.setSoTimeout socket 0)
       socket
       (catch Exception e
         (.close socket)
@@ -291,5 +321,5 @@
   "Address of the loopback HTTP proxy for the given SOCKS5 options. One bridge is
   started per distinct set of options and shared from then on."
   [socks-opts]
-  (let [k (select-keys socks-opts [:host :port :user :pass])]
+  (let [k (select-keys socks-opts [:host :port :user :pass :connect-timeout])]
     @(get (swap! bridges update k (fn [d] (or d (delay (start-bridge k))))) k)))
