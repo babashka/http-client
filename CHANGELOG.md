@@ -2,6 +2,10 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
+## Unreleased
+
+- [#85](https://github.com/babashka/http-client/issues/85): add SOCKS5 proxy support with `:proxy {:type :socks5 :host <string> :port <long>}`, and optional `:user` and `:pass`. `java.net.http` connects through HTTP proxies only, so this starts an HTTP proxy on 127.0.0.1 that tunnels over the SOCKS5 proxy. You can use a SOCKS5 proxy only in the `:proxy` map of `client`. CI tests it against microsocks only.
+
 ## 0.4.24 (2026-07-26)
 
 - [#80](https://github.com/babashka/http-client/issues/80): accept a function of the request URI in `:proxy` to select a proxy per request ([@jeeger](https://github.com/jeeger))
