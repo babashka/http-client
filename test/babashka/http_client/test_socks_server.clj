@@ -53,20 +53,29 @@
         (do (write-bytes out [5 0]) true)
         (do (write-bytes out [5 0xFF]) false)))))
 
-(defn- read-target [^InputStream in]
-  (let [head (read-n in 4)
-        host (case (long (ub head 3))
-               1 (let [ip (read-n in 4)]
-                   (str/join "." (map #(ub ip %) (range 4))))
-               3 (String. (read-n in (ub (read-n in 1) 0)) StandardCharsets/UTF_8)
-               ;; Expanded form, so the test does not depend on how the
-               ;; canonical short form compresses zero groups.
-               4 (let [ip (read-n in 16)]
-                   (str/join ":" (map (fn [i] (Integer/toHexString
-                                               (+ (* 256 (ub ip (* 2 i))) (ub ip (inc (* 2 i))))))
-                                      (range 8)))))
-        port-bytes (read-n in 2)]
-    [host (+ (* 256 (ub port-bytes 0)) (ub port-bytes 1))]))
+(defn- read-target
+  "Reads the connect request with a single read, the way microsocks does. A
+  client that splits the request across writes puts it on the wire in parts and
+  must fail here rather than only against a real proxy."
+  [^InputStream in]
+  (let [^bytes buf (byte-array 262)
+        n (.read in buf)
+        _ (when (< n 5) (throw (ex-info "short SOCKS5 request" {:read n})))
+        [host end] (case (long (ub buf 3))
+                     1 [(str/join "." (map #(ub buf (+ 4 %)) (range 4))) 8]
+                     3 (let [len (ub buf 4)]
+                         [(String. buf 5 ^int len StandardCharsets/UTF_8) (+ 5 len)])
+                     ;; Expanded form, so the test does not depend on how the
+                     ;; canonical short form compresses zero groups.
+                     4 [(str/join ":" (map (fn [i]
+                                             (Integer/toHexString
+                                              (+ (* 256 (ub buf (+ 4 (* 2 i))))
+                                                 (ub buf (+ 5 (* 2 i))))))
+                                           (range 8)))
+                        20])]
+    (when (< n (+ end 2))
+      (throw (ex-info "SOCKS5 request arrived in parts" {:read n :expected (+ end 2)})))
+    [host (+ (* 256 (ub buf end)) (ub buf (inc end)))]))
 
 (defn- handle [^Socket client {:keys [user pass targets]}]
   (with-open [client client]

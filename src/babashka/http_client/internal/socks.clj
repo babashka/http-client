@@ -55,10 +55,10 @@
 (defn- authenticate [^InputStream in ^OutputStream out ^String user ^String pass]
   (let [u (.getBytes user StandardCharsets/UTF_8)
         p (.getBytes pass StandardCharsets/UTF_8)]
-    (.write out (->byte-array [1 (alength u)]))
-    (.write out u)
-    (.write out (->byte-array [(alength p)]))
-    (.write out p)
+    ;; One write per message. The stream is unbuffered, so writing in parts puts
+    ;; the message on the wire in parts, and a proxy that reads it in one call
+    ;; sees a truncated message and hangs up.
+    (.write out (->byte-array (concat [1 (alength u)] (seq u) [(alength p)] (seq p))))
     (.flush out)
     (when-not (zero? (ub (read-n in 2) 1))
       (throw (ex-info "SOCKS proxy rejected the user and password." {})))))
@@ -145,9 +145,9 @@
 
 (defn- request-connect [^InputStream in ^OutputStream out ^String host ^long port]
   (let [[atyp ^bytes addr] (address-bytes host)]
-    (.write out (->byte-array [5 1 0 atyp]))
-    (.write out addr)
-    (.write out (->byte-array [(bit-shift-right port 8) (bit-and port 0xFF)]))
+    (.write out (->byte-array (concat [5 1 0 atyp]
+                                      (seq addr)
+                                      [(bit-shift-right port 8) (bit-and port 0xFF)])))
     (.flush out))
   (let [reply (read-n in 4)
         status (ub reply 1)]
