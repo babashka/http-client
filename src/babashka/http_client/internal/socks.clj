@@ -302,11 +302,29 @@
       true)
     false))
 
+(defn- bad-gateway [^Exception e]
+  (let [reason (or (.getMessage e) (str e))]
+    (str "HTTP/1.1 502 Bad Gateway\r\n"
+         "Content-Type: text/plain; charset=utf-8\r\n"
+         "Content-Length: " (alength (.getBytes reason StandardCharsets/ISO_8859_1)) "\r\n"
+         "Connection: close\r\n\r\n"
+         reason)))
+
+(defn- report
+  "Reports a failure the client cannot be told about. java.net.http reduces a
+  failed CONNECT to the status code alone, so without this the reason is lost."
+  [socks-opts ^Exception e]
+  (if-let [handler (:on-error socks-opts)]
+    (quietly #(handler e))
+    (binding [*out* *err*]
+      (println "babashka.http-client SOCKS5 bridge:" (or (.getMessage e) (str e))))))
+
 (defn- connect-or-fail [socks-opts ^Socket client ^String host ^long port]
   (try
     (socks-connect socks-opts host port)
     (catch Exception e
-      (quietly #(write-ascii (.getOutputStream client) "HTTP/1.1 502 Bad Gateway\r\n\r\n"))
+      (report socks-opts e)
+      (quietly #(write-ascii (.getOutputStream client) (bad-gateway e)))
       (throw e))))
 
 (defn- handle-connect [socks-opts ^Socket client ^String target]
@@ -374,7 +392,8 @@
 
 (defn bridge-address
   "Address of the loopback HTTP proxy for the given SOCKS5 options. One bridge is
-  started per distinct set of options and shared from then on."
+  started per distinct set of connection options and shared from then on, so the
+  `:on-error` of whichever client starts it is the one it keeps."
   [socks-opts]
   (let [k (select-keys socks-opts [:host :port :user :pass :connect-timeout])]
-    @(get (swap! bridges update k (fn [d] (or d (delay (start-bridge k))))) k)))
+    @(get (swap! bridges update k (fn [d] (or d (delay (start-bridge socks-opts))))) k)))

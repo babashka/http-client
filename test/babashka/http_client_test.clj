@@ -679,6 +679,66 @@
   (with-bridge-connection bridge request
     (fn [_out ^java.io.BufferedReader in] (.readLine in))))
 
+(deftest socks5-failure-is-reported-test
+  (testing "the reason a SOCKS5 proxy refused reaches the caller"
+    (let [socks (socks/start {:user "bob" :pass "secret"})
+          errors (atom [])
+          client (http/client {:proxy {:type :socks5 :host "127.0.0.1" :port (:port socks)
+                                       :user "bob" :pass "wrong"
+                                       :on-error (fn [e] (swap! errors conj (ex-message e)))}})]
+      (try
+        (let [resp (http/get "http://localhost:12233/200" {:client client :throw false})]
+          (testing "in the response body, which is all a plain request can carry"
+            (is (= 502 (:status resp)))
+            (is (str/includes? (:body resp) "rejected the user and password"))))
+        (testing "and through :on-error, which is all CONNECT can carry"
+          (is (some (fn [m] (str/includes? m "rejected the user and password")) @errors)))
+        (finally ((:stop socks)))))))
+
+;; Run against a real SOCKS5 proxy with, for example:
+;;   ssh -D 21080 -N localhost
+;;   SOCKS_PROXY_PORT=21080 clojure -M:test
+;; Skipped when SOCKS_PROXY_PORT is unset.
+(deftest socks5-external-proxy-test
+  (if-let [port (System/getenv "SOCKS_PROXY_PORT")]
+    (let [client (http/client
+                  {:follow-redirects :normal
+                   :proxy (cond-> {:type :socks5
+                                   :host (or (System/getenv "SOCKS_PROXY_HOST") "127.0.0.1")
+                                   :port (Long/parseLong port)}
+                            (System/getenv "SOCKS_PROXY_USER")
+                            (assoc :user (System/getenv "SOCKS_PROXY_USER")
+                                   :pass (System/getenv "SOCKS_PROXY_PASS")))})]
+      (println "Testing against the SOCKS5 proxy on port" port)
+      (testing "a plain request"
+        (let [resp (http/get "http://localhost:12233/200" {:client client})]
+          (is (= 200 (:status resp)))
+          (is (str/includes? (:body resp) "200"))))
+      (testing "a POST body"
+        (is (= "hello there" (:body (http/post "http://localhost:12233/200"
+                                               {:client client :body "hello there"})))))
+      (testing "a redirect chain"
+        (is (= 200 (:status (http/get "http://localhost:12233/redirect/3" {:client client})))))
+      (testing "many requests on one client"
+        (is (= {200 10} (frequencies (repeatedly 10 #(:status (http/get "http://localhost:12233/200"
+                                                                        {:client client})))))))
+      (testing "an IP literal target"
+        (is (= 200 (:status (http/get "http://127.0.0.1:12233/200" {:client client})))))
+      (testing "a CONNECT tunnel, which is what https and wss use"
+        (with-bridge-connection
+          (bridge-address client)
+          (str "CONNECT localhost:12233 HTTP/1.1\r\n"
+               "Host: localhost:12233\r\n"
+               "Proxy-Authorization: " (socks-auth/authorization) "\r\n\r\n")
+          (fn [^java.io.OutputStream out ^java.io.BufferedReader in]
+            (is (str/includes? (.readLine in) "200"))
+            (while (not= "" (.readLine in)))
+            (.write out (.getBytes "GET /200 HTTP/1.1\r\nHost: localhost:12233\r\nConnection: close\r\n\r\n"
+                                   "ISO-8859-1"))
+            (.flush out)
+            (is (str/includes? (.readLine in) "200"))))))
+    (println "Skipping: set SOCKS_PROXY_PORT to test against a real SOCKS5 proxy")))
+
 (deftest socks5-connect-test
   (testing "CONNECT is tunneled through the SOCKS5 proxy"
     (let [socks (socks/start)
