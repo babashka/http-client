@@ -52,3 +52,32 @@ jobs:
 
       - name: Run bb tests
         run: bb test:bb
+
+      # The SOCKS5 tests above run against a server in this repo, which shares
+      # its reading of RFC 1928 with the client. These run against one neither
+      # of us wrote. They skip where SOCKS_PROXY_PORT is unset.
+      - name: Install a SOCKS5 proxy
+        if: matrix.os == 'ubuntu-latest'
+        run: sudo apt-get update && sudo apt-get install -y microsocks
+
+      - name: Test against a SOCKS5 proxy
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          SOCKS_PROXY_PORT: 21080
+        run: |
+          microsocks -p 21080 &
+          sleep 1
+          bb test:clj :clj-1.11 -n babashka.http-client-test \
+            -v babashka.http-client-test/socks5-external-proxy-test
+
+      - name: Test against a SOCKS5 proxy that wants a user and password
+        if: matrix.os == 'ubuntu-latest'
+        env:
+          SOCKS_PROXY_PORT: 21081
+          SOCKS_PROXY_USER: bob
+          SOCKS_PROXY_PASS: secret
+        run: |
+          microsocks -p 21081 -u bob -P secret &
+          sleep 1
+          bb test:clj :clj-1.11 -n babashka.http-client-test \
+            -v babashka.http-client-test/socks5-external-proxy-test
