@@ -619,7 +619,24 @@
     (is (=
          "https://borkdude:foobar@foobar.net:80/single%2felement?q=1&q=%26moo#/dude"
          (str (#'i/uri-with-query (java.net.URI. "https://borkdude:foobar@foobar.net:80/single%2felement?q=1#/dude")
-                                  "q=%26moo"))))))
+                                  "q=%26moo"))))
+    (testing "existing query, fragment and user info are not decoded"
+      (is (=
+           "https://example.com/search?q=a%26b&page=2"
+           (str (#'i/uri-with-query (java.net.URI. "https://example.com/search?q=a%26b")
+                                    "page=2"))))
+      (is (=
+           "https://example.com/search?q=a%20b&page=2"
+           (str (#'i/uri-with-query (java.net.URI. "https://example.com/search?q=a%20b")
+                                    "page=2"))))
+      (is (=
+           "https://example.com/p?a=1&page=2#foo%20bar"
+           (str (#'i/uri-with-query (java.net.URI. "https://example.com/p?a=1#foo%20bar")
+                                    "page=2"))))
+      (is (=
+           "https://user:p%40ss@example.com/p?a=1&page=2"
+           (str (#'i/uri-with-query (java.net.URI. "https://user:p%40ss@example.com/p?a=1")
+                                    "page=2")))))))
 
 (deftest ring-client-test
   (testing "inputstring body"
