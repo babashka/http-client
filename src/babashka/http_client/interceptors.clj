@@ -103,16 +103,16 @@
   "We can't use the URI constructor because it encodes all arguments for us.
   See https://stackoverflow.com/a/77971448/6264"
   [^java.net.URI uri new-query]
-  (let [old-query (.getQuery uri)
+  (let [old-query (.getRawQuery uri)
         new-query (if old-query (str old-query "&" new-query)
                       new-query)]
     (java.net.URI.
      (str (.getScheme uri) "://"
-          (.getAuthority uri)
+          (.getRawAuthority uri)
           (.getRawPath uri)
           (when-let [nq new-query]
             (str "?" nq))
-          (when-let [f (.getFragment uri)]
+          (when-let [f (.getRawFragment uri)]
             (str "#" f))))))
 
 (def query-params
@@ -129,12 +129,12 @@
 (comment
   (def uri (java.net.URI. "https://borkdude:foobar@foobar.net:80/single%2felement?q=1#/dude"))
   (.getScheme uri) ;;=> https
-  (.getSchemeSpecificPart uri) ;;=> //foobar.net/?q=1
-  (.getUserInfo uri) ;;=> nil
-  (.getAuthority uri) ;;=> "foobar.net"
+  (.getSchemeSpecificPart uri) ;;=> "//borkdude:foobar@foobar.net:80/single/element?q=1"
+  (.getUserInfo uri) ;;=> "borkdude:foobar"
+  (.getRawAuthority uri) ;;=> "borkdude:foobar@foobar.net:80"
   (.getRawPath uri) ;;=> "/single%2felement"
-  (.getQuery uri) ;;=> q=1
-  (.getFragment uri) ;;=> nil
+  (.getRawQuery uri) ;;=> "q=1"
+  (.getRawFragment uri) ;;=> "/dude"
   (uri-with-query uri "f=dude%26hello"))
 
 (def form-params
