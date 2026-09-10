@@ -2,7 +2,7 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## Unreleased
+## 0.4.25 (2026-09-11)
 
 - [#86](https://github.com/babashka/http-client/issues/86): `uri-with-query` no longer decodes the existing query, fragment and user info when `:query-params` are used ([@dylanpulver](https://github.com/dylanpulver))
 
