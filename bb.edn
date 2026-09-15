@@ -1,5 +1,6 @@
 {:paths ["bb"]
- :deps {io.github.babashka/deps-deploy {:mvn/version "0.0.1"}}
+ :deps {io.github.babashka/deps-deploy {:mvn/version "0.0.1"
+                                        :exclusions [org.babashka/http-client]}}
  :tasks
  {test:clj {:doc "Run jvm tests, optionally specify clj-version (ex. :clj-1.10 :clj-1.11(default) or :clj-all)"
             :task test-clj/-main}
