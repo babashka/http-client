@@ -549,6 +549,27 @@
     (is (thrown-with-msg? clojure.lang.ExceptionInfo #":host and :port"
                           (http/->ProxySelector {:host "127.0.0.1"})))))
 
+(deftest proxy-connect-407-test
+  (let [server (java.net.ServerSocket. 0)
+        port (.getLocalPort server)]
+    (future (try (loop []
+                   (with-open [socket (.accept server)]
+                     (let [r (io/reader (.getInputStream socket))
+                           out (io/writer (.getOutputStream socket))]
+                       (dorun (take-while seq (repeatedly #(.readLine r))))
+                       (.write out "HTTP/1.1 407 Proxy Authentication Required\r\nProxy-Authenticate: Basic realm=\"x\"\r\nContent-Length: 0\r\n\r\n")
+                       (.flush out)))
+                   (recur))
+                 (catch Exception _ nil)))
+    (try
+      (let [client (http/client {:proxy {:host "127.0.0.1" :port port}})]
+        (doseq [as [:string :bytes :stream]]
+          (testing (str "a 407 to CONNECT returns status 407 and a nil body with :as " as)
+            (let [resp (http/get "https://example.invalid/" {:client client :throw false :as as})]
+              (is (= 407 (:status resp)))
+              (is (nil? (:body resp)))))))
+      (finally (.close server)))))
+
 (deftest cookie-handler-test
   (testing "nil passthrough"
     (is (nil? (http/->CookieHandler nil))))
