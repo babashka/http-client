@@ -31,8 +31,28 @@
                                                           (fn [[_ match]]
                                                             (str "#_:version " (pr-str version)))))))}
 
-  publish {:doc "Build the jar and deploy it to Clojars"
+  bump-release {:doc "Bump release counter and turn the Unreleased changelog header into the new version"
+                :requires ([clojure.string :as str]
+                           [utils])
+                :task (let [old-version (utils/format-version)
+                            changelog (slurp "CHANGELOG.md")]
+                        (when-not (str/includes? changelog "## Unreleased")
+                          (throw (ex-info "CHANGELOG.md has no ## Unreleased header" {})))
+                        (utils/bump-version)
+                        (run 'refresh-version)
+                        (let [new-version (utils/format-version)]
+                          (spit "CHANGELOG.md" (str/replace-first changelog
+                                                                 "## Unreleased"
+                                                                 (str "## " new-version)))
+                          (spit "README.md" (str/replace (slurp "README.md")
+                                                         old-version
+                                                         new-version))
+                          (shell "git add deps.edn src/babashka/http_client/internal/version.clj README.md CHANGELOG.md")
+                          (shell "git commit -m" (str "v" new-version))
+                          (shell "git tag" (str "v" new-version))
+                          (shell "git push --tags")))}
+
+  publish {:doc "Publish to clojars, then push"
            :depends [refresh-version]
            :extra-paths ["."]
-           :requires ([build])
-           :task (build/deploy {})}}}
+           :exec-fn tasks/publish}}}
