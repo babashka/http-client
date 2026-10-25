@@ -43,7 +43,7 @@
                         (let [new-version (utils/format-version)]
                           (spit "CHANGELOG.md" (str/replace-first changelog
                                                                  "## Unreleased"
-                                                                 (str "## " new-version)))
+                                                                 (str "## " new-version " (" (java.time.LocalDate/now) ")")))
                           (spit "README.md" (str/replace (slurp "README.md")
                                                          old-version
                                                          new-version))

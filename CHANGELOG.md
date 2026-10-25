@@ -2,7 +2,7 @@
 
 Babashka [http-client](https://github.com/babashka/http-client): HTTP client for Clojure and babashka built on java.net.http
 
-## 0.4.26
+## 0.4.26 (2026-10-25)
 
 - [#91](https://github.com/babashka/http-client/issues/91): `decode-body` passes a nil body through, e.g. of a 407 to `CONNECT`
 
